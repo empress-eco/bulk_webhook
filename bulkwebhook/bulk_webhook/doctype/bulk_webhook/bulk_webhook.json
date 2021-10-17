@@ -11,6 +11,7 @@
   "source",
   "cb_doc_events",
   "enabled",
+  "frequency",
   "cron",
   "script_section",
   "script",
@@ -48,7 +49,6 @@
   "sb_webhook_headers",
   "webhook_headers",
   "sb_webhook_data",
-  "webhook_data",
   "webhook_json"
  ],
  "fields": [
@@ -98,10 +98,11 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "JSON",
    "fieldname": "request_structure",
    "fieldtype": "Select",
    "label": "Request Structure",
-   "options": "\nForm URL-Encoded\nJSON"
+   "options": "JSON"
   },
   {
    "fieldname": "sb_security",
@@ -137,13 +138,6 @@
    "label": "Webhook Data"
   },
   {
-   "depends_on": "eval: !doc.request_structure || doc.request_structure == \"Form URL-Encoded\"",
-   "fieldname": "webhook_data",
-   "fieldtype": "Table",
-   "label": "Data",
-   "options": "Webhook Data"
-  },
-  {
    "depends_on": "eval: doc.request_structure == \"JSON\"",
    "fieldname": "webhook_json",
    "fieldtype": "Code",
@@ -158,11 +152,14 @@
    "set_only_once": 1
   },
   {
+   "depends_on": "eval: doc.frequency == \"CRON\"",
    "fieldname": "cron",
    "fieldtype": "Small Text",
-   "label": "Frequency CRON"
+   "label": "CRON",
+   "mandatory_depends_on": "eval: doc.frequency == \"CRON\""
   },
   {
+   "depends_on": "eval:doc.source == \"Report\"",
    "fieldname": "report_section",
    "fieldtype": "Section Break",
    "label": "Report"
@@ -194,6 +191,7 @@
    "label": "Reference Report"
   },
   {
+   "depends_on": "eval:doc.source == \"Report\"",
    "fieldname": "report_filter_data_section",
    "fieldtype": "Section Break",
    "label": "Report Filter Data"
@@ -215,6 +213,7 @@
    "label": "No of Rows (Max 500)"
   },
   {
+   "depends_on": "eval:doc.source == \"Report\"",
    "fieldname": "report_filters_section",
    "fieldtype": "Section Break",
    "label": "Report Filters"
@@ -238,6 +237,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.source == \"Report\"",
    "fieldname": "dynamic_report_filters_section",
    "fieldtype": "Section Break",
    "label": "Dynamic Report Filters"
@@ -263,6 +263,7 @@
    "options": "\nDaily\nWeekly\nMonthly\nQuarterly\nHalf Yearly\nYearly"
   },
   {
+   "depends_on": "eval:doc.source == \"Script\"",
    "fieldname": "script_section",
    "fieldtype": "Section Break",
    "label": "Script"
@@ -270,9 +271,11 @@
   {
    "fieldname": "script",
    "fieldtype": "Code",
-   "label": "Script"
+   "label": "Script",
+   "mandatory_depends_on": "eval:doc.source == \"Script\""
   },
   {
+   "depends_on": "eval:doc.source == \"Method\"",
    "fieldname": "method_section",
    "fieldtype": "Section Break",
    "label": "Method"
@@ -280,7 +283,8 @@
   {
    "fieldname": "method",
    "fieldtype": "Small Text",
-   "label": "Method"
+   "label": "Method",
+   "mandatory_depends_on": "eval:doc.source == \"Method\""
   },
   {
    "fieldname": "column_break_33",
@@ -290,10 +294,17 @@
    "fieldname": "method_parameters",
    "fieldtype": "Code",
    "label": "Method Parameters"
+  },
+  {
+   "fieldname": "frequency",
+   "fieldtype": "Select",
+   "label": "Frequency",
+   "options": "\nHourly\nDaily\nWeekly\nMonthly\nYearly\nCRON",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2021-10-17 17:33:39.438678",
+ "modified": "2021-10-17 17:53:53.510964",
  "modified_by": "Administrator",
  "module": "Bulk Webhook",
  "name": "Bulk Webhook",
