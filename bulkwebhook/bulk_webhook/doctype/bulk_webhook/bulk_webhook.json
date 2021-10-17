@@ -1,0 +1,318 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2021-10-17 16:47:26.425428",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "sb_doc_events",
+  "naming_series",
+  "source",
+  "cb_doc_events",
+  "enabled",
+  "cron",
+  "script_section",
+  "script",
+  "method_section",
+  "method",
+  "column_break_33",
+  "method_parameters",
+  "report_section",
+  "report",
+  "user",
+  "column_break_11",
+  "report_type",
+  "reference_report",
+  "report_filter_data_section",
+  "send_if_data",
+  "data_modified_till",
+  "no_of_rows",
+  "report_filters_section",
+  "filters_display",
+  "filters",
+  "filter_meta",
+  "dynamic_report_filters_section",
+  "from_date_field",
+  "to_date_field",
+  "column_break_25",
+  "dynamic_date_period",
+  "sb_webhook",
+  "request_url",
+  "request_method",
+  "cb_webhook",
+  "request_structure",
+  "sb_security",
+  "enable_security",
+  "webhook_secret",
+  "sb_webhook_headers",
+  "webhook_headers",
+  "sb_webhook_data",
+  "webhook_data",
+  "webhook_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "sb_doc_events",
+   "fieldtype": "Section Break",
+   "label": "Doc Events"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "\nBHOOK-.####"
+  },
+  {
+   "fieldname": "cb_doc_events",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "sb_webhook",
+   "fieldtype": "Section Break",
+   "label": "Webhook Request"
+  },
+  {
+   "fieldname": "request_url",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Request URL",
+   "reqd": 1
+  },
+  {
+   "default": "POST",
+   "fieldname": "request_method",
+   "fieldtype": "Select",
+   "label": "Request Method",
+   "options": "POST\nPUT\nDELETE",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb_webhook",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "request_structure",
+   "fieldtype": "Select",
+   "label": "Request Structure",
+   "options": "\nForm URL-Encoded\nJSON"
+  },
+  {
+   "fieldname": "sb_security",
+   "fieldtype": "Section Break",
+   "label": "Webhook Security"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_security",
+   "fieldtype": "Check",
+   "label": "Enable Security"
+  },
+  {
+   "depends_on": "eval:doc.enable_security == 1",
+   "fieldname": "webhook_secret",
+   "fieldtype": "Password",
+   "label": "Webhook Secret"
+  },
+  {
+   "fieldname": "sb_webhook_headers",
+   "fieldtype": "Section Break",
+   "label": "Webhook Headers"
+  },
+  {
+   "fieldname": "webhook_headers",
+   "fieldtype": "Table",
+   "label": "Headers",
+   "options": "Bulk Webhook Header"
+  },
+  {
+   "fieldname": "sb_webhook_data",
+   "fieldtype": "Section Break",
+   "label": "Webhook Data"
+  },
+  {
+   "depends_on": "eval: !doc.request_structure || doc.request_structure == \"Form URL-Encoded\"",
+   "fieldname": "webhook_data",
+   "fieldtype": "Table",
+   "label": "Data",
+   "options": "Webhook Data"
+  },
+  {
+   "depends_on": "eval: doc.request_structure == \"JSON\"",
+   "fieldname": "webhook_json",
+   "fieldtype": "Code",
+   "label": "JSON Request Body"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Source",
+   "options": "Report\nMethod\nScript",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "cron",
+   "fieldtype": "Small Text",
+   "label": "Frequency CRON"
+  },
+  {
+   "fieldname": "report_section",
+   "fieldtype": "Section Break",
+   "label": "Report"
+  },
+  {
+   "fieldname": "report",
+   "fieldtype": "Link",
+   "label": "Report",
+   "options": "Report"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "Based on Permissions For User",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_11",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "report_type",
+   "fieldtype": "Read Only",
+   "label": "Report Type"
+  },
+  {
+   "fieldname": "reference_report",
+   "fieldtype": "Data",
+   "label": "Reference Report"
+  },
+  {
+   "fieldname": "report_filter_data_section",
+   "fieldtype": "Section Break",
+   "label": "Report Filter Data"
+  },
+  {
+   "default": "0",
+   "fieldname": "send_if_data",
+   "fieldtype": "Check",
+   "label": "Send only if there is any data"
+  },
+  {
+   "fieldname": "data_modified_till",
+   "fieldtype": "Int",
+   "label": "Only Send Records Updated in Last X Hours"
+  },
+  {
+   "fieldname": "no_of_rows",
+   "fieldtype": "Int",
+   "label": "No of Rows (Max 500)"
+  },
+  {
+   "fieldname": "report_filters_section",
+   "fieldtype": "Section Break",
+   "label": "Report Filters"
+  },
+  {
+   "fieldname": "filters_display",
+   "fieldtype": "HTML",
+   "label": "Filters Display"
+  },
+  {
+   "fieldname": "filters",
+   "fieldtype": "Text",
+   "hidden": 1,
+   "label": "Filters"
+  },
+  {
+   "fieldname": "filter_meta",
+   "fieldtype": "Text",
+   "hidden": 1,
+   "label": "Filter Meta",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dynamic_report_filters_section",
+   "fieldtype": "Section Break",
+   "label": "Dynamic Report Filters"
+  },
+  {
+   "fieldname": "from_date_field",
+   "fieldtype": "Select",
+   "label": "From Date Field"
+  },
+  {
+   "fieldname": "to_date_field",
+   "fieldtype": "Select",
+   "label": "To Date Field"
+  },
+  {
+   "fieldname": "column_break_25",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dynamic_date_period",
+   "fieldtype": "Select",
+   "label": "Period",
+   "options": "\nDaily\nWeekly\nMonthly\nQuarterly\nHalf Yearly\nYearly"
+  },
+  {
+   "fieldname": "script_section",
+   "fieldtype": "Section Break",
+   "label": "Script"
+  },
+  {
+   "fieldname": "script",
+   "fieldtype": "Code",
+   "label": "Script"
+  },
+  {
+   "fieldname": "method_section",
+   "fieldtype": "Section Break",
+   "label": "Method"
+  },
+  {
+   "fieldname": "method",
+   "fieldtype": "Small Text",
+   "label": "Method"
+  },
+  {
+   "fieldname": "column_break_33",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "method_parameters",
+   "fieldtype": "Code",
+   "label": "Method Parameters"
+  }
+ ],
+ "links": [],
+ "modified": "2021-10-17 17:33:39.438678",
+ "modified_by": "Administrator",
+ "module": "Bulk Webhook",
+ "name": "Bulk Webhook",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

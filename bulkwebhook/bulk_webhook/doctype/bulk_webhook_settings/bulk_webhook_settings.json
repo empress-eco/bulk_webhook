@@ -1,0 +1,47 @@
+{
+ "actions": [],
+ "creation": "2021-10-17 16:44:46.037095",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "headers",
+  "url"
+ ],
+ "fields": [
+  {
+   "fieldname": "headers",
+   "fieldtype": "Table",
+   "label": "Default Headers",
+   "options": "Bulk Webhook Header"
+  },
+  {
+   "fieldname": "url",
+   "fieldtype": "Data",
+   "label": "Default URL"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2021-10-17 16:45:04.727432",
+ "modified_by": "Administrator",
+ "module": "Bulk Webhook",
+ "name": "Bulk Webhook Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
