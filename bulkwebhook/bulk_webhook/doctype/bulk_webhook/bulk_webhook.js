@@ -7,7 +7,7 @@ frappe.ui.form.on('Bulk Webhook', {
         if (!frm.is_new()) {
             frm.add_custom_button(__('Send Now'), function () {
                 frappe.call({
-                    method: 'frappe.email.doctype.auto_email_report.auto_email_report.send_now',
+                    method: 'bulkwebhook.bulk_webhook.doctype.bulk_webhook.bulk_webhook.send_now',
                     args: { name: frm.doc.name },
                     callback: function () {
                         frappe.msgprint(__('Scheduled to send'));
