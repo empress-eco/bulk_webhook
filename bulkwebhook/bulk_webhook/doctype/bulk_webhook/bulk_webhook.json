@@ -8,6 +8,7 @@
  "field_order": [
   "sb_doc_events",
   "naming_series",
+  "title",
   "source",
   "cb_doc_events",
   "enabled",
@@ -61,7 +62,8 @@
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "Naming Series",
-   "options": "\nBHOOK-.####"
+   "options": "BHOOK-.####",
+   "reqd": 1
   },
   {
    "fieldname": "cb_doc_events",
@@ -144,11 +146,13 @@
    "label": "JSON Request Body"
   },
   {
+   "default": "Report",
    "fieldname": "source",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Source",
    "options": "Report\nMethod\nScript",
+   "reqd": 1,
    "set_only_once": 1
   },
   {
@@ -181,14 +185,18 @@
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": "report.report_type",
    "fieldname": "report_type",
    "fieldtype": "Read Only",
-   "label": "Report Type"
+   "label": "Report Type",
+   "read_only": 1
   },
   {
+   "fetch_from": "report.reference_report",
    "fieldname": "reference_report",
    "fieldtype": "Data",
-   "label": "Reference Report"
+   "label": "Reference Report",
+   "read_only": 1
   },
   {
    "depends_on": "eval:doc.source == \"Report\"",
@@ -301,10 +309,16 @@
    "label": "Frequency",
    "options": "\nHourly\nDaily\nWeekly\nMonthly\nYearly\nCRON",
    "reqd": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2021-10-17 17:53:53.510964",
+ "modified": "2021-10-19 14:04:04.723064",
  "modified_by": "Administrator",
  "module": "Bulk Webhook",
  "name": "Bulk Webhook",
@@ -325,5 +339,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "title_field": "title",
  "track_changes": 1
 }
