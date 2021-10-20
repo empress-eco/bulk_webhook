@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 import calendar
 from datetime import timedelta
+from warnings import filters
 from six.moves.urllib.parse import urlparse
 import requests
 import base64
@@ -14,6 +15,7 @@ from time import sleep
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils.background_jobs import enqueue
 from frappe.utils import (
     now_datetime,
     today,
@@ -125,7 +127,7 @@ class BulkWebhook(Document):
         if not data:
             return
 
-        enqueue_webhook(self)
+        enqueue_bulk_webhook(self.name)
 
     def dynamic_date_filters_set(self):
         return self.dynamic_date_period and self.from_date_field and self.to_date_field
@@ -139,62 +141,17 @@ def send_now(name):
     webhook.send()
 
 
-def send_daily():
-    """Check reports to be sent daily"""
-
-    current_day = calendar.day_name[now_datetime().weekday()]
-    enabled_reports = frappe.get_all(
-        "Bulk Webhook",
-        filters={"enabled": 1, "frequency": ("in", ("Daily", "Weekdays", "Weekly"))},
-    )
-
-    for report in enabled_reports:
-        auto_email_report = frappe.get_doc("Bulk Webhook", report.name)
-
-        # if not correct weekday, skip
-        if auto_email_report.frequency == "Weekdays":
-            if current_day in ("Saturday", "Sunday"):
-                continue
-        elif auto_email_report.frequency == "Weekly":
-            if auto_email_report.day_of_week != current_day:
-                continue
-        try:
-            auto_email_report.send()
-        except Exception as e:
-            frappe.log_error(
-                e,
-                _("Failed to send {0} Bulk Webhook").format(auto_email_report.name),
-            )
-
-
-def send_monthly():
-    """Check reports to be sent monthly"""
-    for report in frappe.get_all(
-        "Bulk Webhook", {"enabled": 1, "frequency": "Monthly"}
-    ):
-        frappe.get_doc("Bulk Webhook", report.name).send()
-
-
-def update_field_types(columns):
-    for col in columns:
-        if (
-            col.fieldtype in ("Link", "Dynamic Link", "Currency")
-            and col.options != "Currency"
-        ):
-            col.fieldtype = "Data"
-            col.options = ""
-    return columns
-
-
 # Webhook
 def get_context(data):
     return {"data": data, "utils": get_safe_globals().get("frappe").get("utils")}
 
 
-def enqueue_webhook(webhook):
-    webhook = frappe.get_doc("Bulk Webhook", webhook.get("name"))
+def enqueue_bulk_webhook(kwargs):
+    webhook = frappe.get_doc("Bulk Webhook", kwargs)
     headers = get_webhook_headers(webhook)
     data = get_webhook_data(webhook)
+    if not data:
+        return
 
     for i in range(3):
         try:
@@ -217,6 +174,20 @@ def enqueue_webhook(webhook):
                 continue
             else:
                 raise e
+
+
+def enqueue_bulk_webhooks(frequency):
+    webhooks = frappe.get_all(
+        "Bulk Webhook", filters={"enabled": 1, "frequency": frequency}
+    )
+    for webhook in webhooks:
+        enqueue(
+            method=enqueue_bulk_webhook,
+            queue="short",
+            timeout=10000,
+            is_async=True,
+            kwargs=webhook.name,
+        )
 
 
 def log_request(url, headers, data, res):
@@ -268,7 +239,6 @@ def get_webhook_data(webhook):
     if webhook.webhook_json:
         data = frappe.render_template(webhook.webhook_json, get_context(_data))
         console(data).info()
-
         data = json.loads(data)
 
     return data

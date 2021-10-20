@@ -13,7 +13,6 @@
   "cb_doc_events",
   "enabled",
   "frequency",
-  "cron",
   "script_section",
   "script",
   "method_section",
@@ -154,13 +153,6 @@
    "options": "Report\nMethod\nScript",
    "reqd": 1,
    "set_only_once": 1
-  },
-  {
-   "depends_on": "eval: doc.frequency == \"CRON\"",
-   "fieldname": "cron",
-   "fieldtype": "Small Text",
-   "label": "CRON",
-   "mandatory_depends_on": "eval: doc.frequency == \"CRON\""
   },
   {
    "depends_on": "eval:doc.source == \"Report\"",
@@ -307,7 +299,7 @@
    "fieldname": "frequency",
    "fieldtype": "Select",
    "label": "Frequency",
-   "options": "\nHourly\nDaily\nWeekly\nMonthly\nYearly\nCRON",
+   "options": "Every 5 minutes\nEvery 15 minutes\nEvery 30 minutes\nHourly\nDaily\nWeekly\nMonthly",
    "reqd": 1
   },
   {
@@ -318,7 +310,7 @@
   }
  ],
  "links": [],
- "modified": "2021-10-19 14:04:04.723064",
+ "modified": "2021-10-20 23:10:52.225590",
  "modified_by": "Administrator",
  "module": "Bulk Webhook",
  "name": "Bulk Webhook",
