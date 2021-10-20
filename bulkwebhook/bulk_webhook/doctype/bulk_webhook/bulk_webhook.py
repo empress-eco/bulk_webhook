@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-import calendar
 from datetime import timedelta
 from warnings import filters
 from six.moves.urllib.parse import urlparse
@@ -22,7 +21,8 @@ from frappe.utils import (
     add_to_date,
 )
 from frappe.utils.jinja import validate_template
-from frappe.utils.safe_exec import get_safe_globals
+from frappe.utils.safe_exec import get_safe_globals, NamespaceDict, safe_exec
+from types import FunctionType, MethodType, ModuleType
 
 from console import console
 
@@ -44,6 +44,8 @@ class BulkWebhook(Document):
             frappe.throw(_("Check Request URL"), exc=e)
 
     def validate_request_body(self):
+        if not self.source == "Report":
+            return
         if self.request_structure:
             if self.request_structure == "Form URL-Encoded":
                 self.webhook_json = None
@@ -67,6 +69,14 @@ class BulkWebhook(Document):
                 + " <li>".join(throw_list)
                 + "</ul>",
             )
+
+    def get_script_data(self):
+        exec_globals, _locals = safe_exec(self.script, _locals={})
+        data = _locals.get(self.script_return_variable)
+        return data
+
+    def get_method_data(self):
+        return []
 
     def get_report_data(self):
         """Returns file in for the report in given format"""
@@ -122,7 +132,7 @@ class BulkWebhook(Document):
         if self.filter_meta and not self.filters:
             frappe.throw(_("Please set filters value in Report Filter table."))
 
-        data = self.get_report_data()
+        data = get_webhook_data(self)
 
         if not data:
             return
@@ -152,12 +162,15 @@ def enqueue_bulk_webhook(kwargs):
     data = get_webhook_data(webhook)
     if not data:
         return
+    url = webhook.request_url
+    if not url:
+        url = frappe.get_value("Bulk Webhook Settings", "Bulk Webhook Settings", "url")
 
     for i in range(3):
         try:
             r = requests.request(
                 method=webhook.request_method,
-                url=webhook.request_url,
+                url=url,
                 data=json.dumps(data, default=str),
                 headers=headers,
                 timeout=5,
@@ -203,13 +216,11 @@ def log_request(url, headers, data, res):
     )
 
     request_log.insert(ignore_permissions=True)
-    console(request_log).info()
     frappe.db.commit()
 
 
 def get_webhook_headers(webhook):
     headers = {}
-
     if webhook.enable_security:
         data = get_webhook_data(webhook)
         signature = base64.b64encode(
@@ -225,14 +236,24 @@ def get_webhook_headers(webhook):
         for h in webhook.webhook_headers:
             if h.get("key") and h.get("value"):
                 headers[h.get("key")] = h.get("value")
+    else:
+        settings = frappe.get_single("Bulk Webhook Settings")
+        if settings.headers:
+            for h in settings.headers:
+                if h.get("key") and h.get("value"):
+                    headers[h.get("key")] = h.get("value")
 
     return headers
 
 
 def get_webhook_data(webhook):
     data = {}
-    _data = webhook.get_report_data()
-    console(_data).info()
+    if webhook.source == "Report":
+        _data = webhook.get_report_data()
+    elif webhook.source == "Method":
+        _data = webhook.get_method_data()
+    elif webhook.source == "Script":
+        _data = webhook.get_script_data()
     if not _data:
         return
 
@@ -242,3 +263,50 @@ def get_webhook_data(webhook):
         data = json.loads(data)
 
     return data
+
+
+@frappe.whitelist()
+def get_autocompletion_items():
+    """Generates a list of a autocompletion strings from the context dict
+    that is used while executing a Server Script.
+
+    Returns:
+        list: Returns list of autocompletion items.
+        For e.g., ["frappe.utils.cint", "frappe.db.get_all", ...]
+    """
+
+    def get_keys(obj):
+        out = []
+        for key in obj:
+            if key.startswith("_"):
+                continue
+            value = obj[key]
+            if isinstance(value, (NamespaceDict, dict)) and value:
+                if key == "form_dict":
+                    out.append(["form_dict", 7])
+                    continue
+                for subkey, score in get_keys(value):
+                    fullkey = f"{key}.{subkey}"
+                    out.append([fullkey, score])
+            else:
+                if isinstance(value, type) and issubclass(value, Exception):
+                    score = 0
+                elif isinstance(value, ModuleType):
+                    score = 10
+                elif isinstance(value, (FunctionType, MethodType)):
+                    score = 9
+                elif isinstance(value, type):
+                    score = 8
+                elif isinstance(value, dict):
+                    score = 7
+                else:
+                    score = 6
+                out.append([key, score])
+        return out
+
+    items = frappe.cache().get_value("server_script_autocompletion_items")
+    if not items:
+        items = get_keys(get_safe_globals())
+        items = [{"value": d[0], "score": d[1]} for d in items]
+        frappe.cache().set_value("server_script_autocompletion_items", items)
+    return items

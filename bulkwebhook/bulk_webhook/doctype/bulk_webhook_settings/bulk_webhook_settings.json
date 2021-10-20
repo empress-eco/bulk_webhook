@@ -13,18 +13,21 @@
    "fieldname": "headers",
    "fieldtype": "Table",
    "label": "Default Headers",
-   "options": "Bulk Webhook Header"
+   "options": "Bulk Webhook Header",
+   "reqd": 1
   },
   {
    "fieldname": "url",
    "fieldtype": "Data",
-   "label": "Default URL"
+   "in_list_view": 1,
+   "label": "Default URL",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2021-10-17 16:45:04.727432",
+ "modified": "2021-10-21 02:15:17.835338",
  "modified_by": "Administrator",
  "module": "Bulk Webhook",
  "name": "Bulk Webhook Settings",

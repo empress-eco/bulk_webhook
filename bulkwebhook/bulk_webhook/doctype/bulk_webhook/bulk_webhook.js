@@ -18,10 +18,13 @@ frappe.ui.form.on('Bulk Webhook', {
             if (!frm.doc.user) {
                 frm.set_value('user', frappe.session.user);
             }
-            // if (!frm.doc.email_to) {
-            //     frm.set_value('email_to', frappe.session.user);
-            // }
         }
+        frappe.call({
+            method: 'bulkwebhook.bulk_webhook.doctype.bulk_webhook.bulk_webhook.get_autocompletion_items',
+            callback: function (r) {
+                frm.set_df_property('script', 'autocompletions', r.message);
+            }
+        });
     },
     report: function (frm) {
         frm.set_value('filters', '');

@@ -13,18 +13,20 @@
    "fieldname": "key",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Key"
+   "label": "Key",
+   "reqd": 1
   },
   {
    "fieldname": "value",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Value"
+   "label": "Value",
+   "reqd": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2021-10-17 16:43:20.487159",
+ "modified": "2021-10-21 02:15:39.306590",
  "modified_by": "Administrator",
  "module": "Bulk Webhook",
  "name": "Bulk Webhook Header",
