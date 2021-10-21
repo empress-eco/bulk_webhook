@@ -26,6 +26,7 @@
   "column_break_11",
   "report_type",
   "reference_report",
+  "script_setup_for",
   "report_filter_data_section",
   "send_if_data",
   "data_modified_till",
@@ -316,10 +317,17 @@
    "fieldtype": "Data",
    "label": "Return Variable",
    "mandatory_depends_on": "eval:doc.source == \"Script\""
+  },
+  {
+   "fieldname": "script_setup_for",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Script Setup For",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2021-10-21 02:54:38.416177",
+ "modified": "2021-10-21 14:51:18.055651",
  "modified_by": "Administrator",
  "module": "Bulk Webhook",
  "name": "Bulk Webhook",

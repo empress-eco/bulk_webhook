@@ -3,6 +3,7 @@
 
 frappe.ui.form.on('Bulk Webhook', {
     refresh: function (frm) {
+
         frm.trigger('fetch_report_filters');
         if (!frm.is_new()) {
             frm.add_custom_button(__('Send Now'), function () {
@@ -14,26 +15,29 @@ frappe.ui.form.on('Bulk Webhook', {
                     }
                 });
             });
+            frappe.call({
+                method: 'bulkwebhook.bulk_webhook.doctype.bulk_webhook.bulk_webhook.get_autocompletion_items',
+                callback: function (r) {
+                    frm.set_df_property('script', 'autocompletions', r.message);
+                }
+            });
         } else {
             if (!frm.doc.user) {
                 frm.set_value('user', frappe.session.user);
             }
         }
-        frappe.call({
-            method: 'bulkwebhook.bulk_webhook.doctype.bulk_webhook.bulk_webhook.get_autocompletion_items',
-            callback: function (r) {
-                frm.set_df_property('script', 'autocompletions', r.message);
-            }
-        });
     },
     report: function (frm) {
-        frm.set_value('filters', '');
-        frm.trigger('fetch_report_filters');
+        if (frm.doc.source == "Report") {
+            frm.set_value('filters', '');
+            frm.trigger('fetch_report_filters');
+        }
+
     },
     fetch_report_filters (frm) {
-        if (frm.doc.report
+        if (frm.doc.report && frm.doc.source == "Report"
             && frm.doc.report_type !== 'Report Builder'
-            && frm.script_setup_for !== frm.doc.report
+            && frm.doc.script_setup_for !== frm.doc.report
         ) {
             frappe.call({
                 method: "frappe.desk.query_report.get_script",
@@ -42,8 +46,9 @@ frappe.ui.form.on('Bulk Webhook', {
                 },
                 callback: function (r) {
                     frappe.dom.eval(r.message.script || "");
-                    frm.script_setup_for = frm.doc.report;
+                    frm.set_value('script_setup_for', frm.doc.report);
                     frm.trigger('show_filters');
+                    console.info();
                 }
             });
         } else {
@@ -77,7 +82,7 @@ frappe.ui.form.on('Bulk Webhook', {
 
             if (report_filters && report_filters.length > 0) {
                 frm.set_value('filter_meta', JSON.stringify(report_filters));
-                if (frm.is_dirty()) {
+                if (frm.is_dirty() && !frm.is_new()) {
                     frm.save();
                 }
             }
