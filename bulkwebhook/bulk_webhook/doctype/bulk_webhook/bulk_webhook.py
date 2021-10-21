@@ -3,7 +3,6 @@
 
 from __future__ import unicode_literals
 from datetime import timedelta
-from warnings import filters
 from six.moves.urllib.parse import urlparse
 import requests
 import base64
@@ -24,7 +23,6 @@ from frappe.utils.jinja import validate_template
 from frappe.utils.safe_exec import get_safe_globals, NamespaceDict, safe_exec
 from types import FunctionType, MethodType, ModuleType
 
-from console import console
 
 WEBHOOK_SECRET_HEADER = "X-Frappe-Webhook-Signature"
 
@@ -37,7 +35,12 @@ class BulkWebhook(Document):
 
     def validate_request_url(self):
         try:
-            request_url = urlparse(self.request_url).netloc
+            url = self.request_url
+            if not url:
+                url = frappe.get_value(
+                    "Bulk Webhook Settings", "Bulk Webhook Settings", "url"
+                )
+            request_url = urlparse(url).netloc
             if not request_url:
                 raise frappe.ValidationError
         except Exception as e:
@@ -76,7 +79,9 @@ class BulkWebhook(Document):
         return data
 
     def get_method_data(self):
-        return []
+        kwargs = json.loads(self.method_parameters)
+        data = frappe.get_attr(self.method)(**kwargs)
+        return data
 
     def get_report_data(self):
         """Returns file in for the report in given format"""
@@ -137,7 +142,13 @@ class BulkWebhook(Document):
         if not data:
             return
 
-        enqueue_bulk_webhook(self.name)
+        enqueue(
+            method=enqueue_bulk_webhook,
+            queue="short",
+            timeout=10000,
+            is_async=True,
+            kwargs=self.name,
+        )
 
     def dynamic_date_filters_set(self):
         return self.dynamic_date_period and self.from_date_field and self.to_date_field
@@ -177,11 +188,11 @@ def enqueue_bulk_webhook(kwargs):
             )
             r.raise_for_status()
             frappe.logger().debug({"webhook_success": r.text})
-            log_request(webhook.request_url, headers, data, r)
+            log_request(url, headers, data, r)
             break
         except Exception as e:
             frappe.logger().debug({"webhook_error": e, "try": i + 1})
-            log_request(webhook.request_url, headers, data, r)
+            log_request(url, headers, data, r)
             sleep(3 * i + 1)
             if i != 2:
                 continue
@@ -259,7 +270,6 @@ def get_webhook_data(webhook):
 
     if webhook.webhook_json:
         data = frappe.render_template(webhook.webhook_json, get_context(_data))
-        console(data).info()
         data = json.loads(data)
 
     return data

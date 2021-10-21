@@ -84,8 +84,7 @@
    "fieldname": "request_url",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Request URL",
-   "reqd": 1
+   "label": "Request URL"
   },
   {
    "default": "POST",
@@ -296,7 +295,8 @@
   {
    "fieldname": "method_parameters",
    "fieldtype": "Code",
-   "label": "Method Parameters"
+   "label": "Method Parameters",
+   "options": "JSON"
   },
   {
    "fieldname": "frequency",
@@ -319,7 +319,7 @@
   }
  ],
  "links": [],
- "modified": "2021-10-21 02:08:12.810964",
+ "modified": "2021-10-21 02:54:38.416177",
  "modified_by": "Administrator",
  "module": "Bulk Webhook",
  "name": "Bulk Webhook",
