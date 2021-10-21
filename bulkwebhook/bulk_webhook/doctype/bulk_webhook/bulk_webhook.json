@@ -205,6 +205,7 @@
    "label": "Send only if there is any data"
   },
   {
+   "depends_on": "eval:doc.report_type=='Report Builder'",
    "fieldname": "data_modified_till",
    "fieldtype": "Int",
    "label": "Only Send Records Updated in Last X Hours"
@@ -327,7 +328,7 @@
   }
  ],
  "links": [],
- "modified": "2021-10-21 14:51:18.055651",
+ "modified": "2021-10-21 22:39:05.611819",
  "modified_by": "Administrator",
  "module": "Bulk Webhook",
  "name": "Bulk Webhook",
