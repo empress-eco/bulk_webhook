@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 from datetime import timedelta
+import datetime
 from six.moves.urllib.parse import urlparse
 import requests
 import base64
@@ -268,8 +269,20 @@ def get_webhook_data(webhook):
     if not _data:
         return
 
+    # Convert datetime object to string
+    data_list = []
+    for rec in _data:
+        copy_rec = rec.copy()
+        for key, value in rec.items():
+            if isinstance(
+                value,
+                (datetime.datetime, datetime.time, datetime.date, datetime.timedelta),
+            ):
+                copy_rec[key] = str(value)
+        data_list.append(copy_rec)
+
     if webhook.webhook_json:
-        data = frappe.render_template(webhook.webhook_json, get_context(_data))
+        data = frappe.render_template(webhook.webhook_json, get_context(data_list))
         data = json.loads(data)
 
     return data
