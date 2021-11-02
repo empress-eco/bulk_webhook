@@ -175,6 +175,7 @@ def enqueue_bulk_webhook(kwargs):
     if not data:
         return
     url = webhook.request_url
+    r = {}
     if not url:
         url = frappe.get_value("Bulk Webhook Settings", "Bulk Webhook Settings", "url")
 
