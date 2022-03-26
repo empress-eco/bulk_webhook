@@ -41,6 +41,9 @@
   "column_break_25",
   "dynamic_date_period",
   "sb_webhook",
+  "request_type",
+  "kafka_settings",
+  "kafka_topic",
   "request_url",
   "request_method",
   "cb_webhook",
@@ -51,6 +54,7 @@
   "sb_webhook_headers",
   "webhook_headers",
   "sb_webhook_data",
+  "group_by",
   "webhook_json"
  ],
  "fields": [
@@ -82,13 +86,16 @@
    "label": "Webhook Request"
   },
   {
+   "depends_on": "eval:doc.request_type!=\"Kafka\"",
    "fieldname": "request_url",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Request URL"
+   "label": "Request URL",
+   "mandatory_depends_on": "eval:doc.request_type!=\"Kafka\""
   },
   {
    "default": "POST",
+   "depends_on": "eval:doc.request_type!=\"Kafka\"",
    "fieldname": "request_method",
    "fieldtype": "Select",
    "label": "Request Method",
@@ -101,18 +108,21 @@
   },
   {
    "default": "JSON",
+   "depends_on": "eval:doc.request_type!=\"Kafka\"",
    "fieldname": "request_structure",
    "fieldtype": "Select",
    "label": "Request Structure",
    "options": "JSON"
   },
   {
+   "depends_on": "eval:doc.request_type!=\"Kafka\"",
    "fieldname": "sb_security",
    "fieldtype": "Section Break",
    "label": "Webhook Security"
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.request_type!=\"Kafka\"",
    "fieldname": "enable_security",
    "fieldtype": "Check",
    "label": "Enable Security"
@@ -124,6 +134,7 @@
    "label": "Webhook Secret"
   },
   {
+   "depends_on": "eval:doc.request_type!=\"Kafka\"",
    "fieldname": "sb_webhook_headers",
    "fieldtype": "Section Break",
    "label": "Webhook Headers"
@@ -325,10 +336,36 @@
    "hidden": 1,
    "label": "Script Setup For",
    "read_only": 1
+  },
+  {
+   "fieldname": "request_type",
+   "fieldtype": "Select",
+   "label": "Request Type",
+   "options": "API\nKafka"
+  },
+  {
+   "depends_on": "eval:doc.request_type==\"Kafka\"",
+   "fieldname": "kafka_settings",
+   "fieldtype": "Link",
+   "label": "Kafka Settings",
+   "mandatory_depends_on": "eval:doc.request_type==\"Kafka\"",
+   "options": "Kafka Settings"
+  },
+  {
+   "depends_on": "eval:doc.request_type==\"Kafka\"",
+   "fieldname": "kafka_topic",
+   "fieldtype": "Data",
+   "label": "Kafka Topic",
+   "mandatory_depends_on": "eval:doc.request_type==\"Kafka\""
+  },
+  {
+   "fieldname": "group_by",
+   "fieldtype": "Data",
+   "label": "Send Group By"
   }
  ],
  "links": [],
- "modified": "2021-10-21 22:39:05.611819",
+ "modified": "2022-03-26 14:16:59.761999",
  "modified_by": "Administrator",
  "module": "Bulk Webhook",
  "name": "Bulk Webhook",

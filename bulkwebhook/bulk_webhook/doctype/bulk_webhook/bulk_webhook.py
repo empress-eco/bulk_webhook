@@ -138,9 +138,9 @@ class BulkWebhook(Document):
         if self.filter_meta and not self.filters:
             frappe.throw(_("Please set filters value in Report Filter table."))
 
-        data = get_webhook_data(self)
+        data_list = get_webhook_data(self)
 
-        if not data:
+        if len(data_list)==0:
             return
 
         enqueue(
@@ -171,35 +171,49 @@ def get_context(data):
 def enqueue_bulk_webhook(kwargs):
     webhook = frappe.get_doc("Bulk Webhook", kwargs)
     headers = get_webhook_headers(webhook)
-    data = get_webhook_data(webhook)
-    if not data:
+    data_list = get_webhook_data(webhook) #update here 
+    if len(data_list)==0:
         return
     url = webhook.request_url
-    r = {}
+    
     if not url:
         url = frappe.get_value("Bulk Webhook Settings", "Bulk Webhook Settings", "url")
+    if webhook.request_type == "API":
+        for key,value in data_list.items():
+            for i in range(3):
+                r = {}
+                try:
+                    r = requests.request(
+                        method=webhook.request_method,
+                        url=url,
+                        data=json.dumps(value, default=str),
+                        headers=headers,
+                        timeout=5,
+                    )
+                    r.raise_for_status()
+                    frappe.logger().debug({"webhook_success": r.text})
+                    log_request(url, headers, value, r)
+                    break
+                except Exception as e:
+                    frappe.logger().debug({"webhook_error": e, "try": i + 1})
+                    log_request(url, headers, value, r)
+                    sleep(3 * i + 1)
+                    if i != 2:
+                        continue
+                    else:
+                        raise e
+    elif webhook.request_type == "Kafka":
+        from bulkwebhook.bulk_webhook.doctype.kafka_settings.kafka import send_kafka
+        for key,value in data_list.items():
+            r = {}    
+            try:
+                r = send_kafka(webhook.kafka_settings, webhook.kafka_topic, key, value)
+                log_request(url, headers, value, r)
+                        
+            except Exception as e:
+                log_request(webhook.kafka_topic, webhook.kafka_settings, value, r)
+            
 
-    for i in range(3):
-        try:
-            r = requests.request(
-                method=webhook.request_method,
-                url=url,
-                data=json.dumps(data, default=str),
-                headers=headers,
-                timeout=5,
-            )
-            r.raise_for_status()
-            frappe.logger().debug({"webhook_success": r.text})
-            log_request(url, headers, data, r)
-            break
-        except Exception as e:
-            frappe.logger().debug({"webhook_error": e, "try": i + 1})
-            log_request(url, headers, data, r)
-            sleep(3 * i + 1)
-            if i != 2:
-                continue
-            else:
-                raise e
 
 
 def enqueue_bulk_webhooks(frequency):
@@ -269,24 +283,34 @@ def get_webhook_data(webhook):
         _data = webhook.get_script_data()
     if not _data:
         return
-
-    # Convert datetime object to string
+    group_dict = {}
     data_list = []
     for rec in _data:
         copy_rec = rec.copy()
         for key, value in rec.items():
+            # Convert datetime object to string
             if isinstance(
                 value,
                 (datetime.datetime, datetime.time, datetime.date, datetime.timedelta),
             ):
                 copy_rec[key] = str(value)
-        data_list.append(copy_rec)
+        if webhook.group_by:
+            if copy_rec.get(webhook.group_by):
+                group_dict.setdefault(webhook.group_by,[])
+                group_dict[webhook.group_by].append(copy_rec)
+        else:
+            group_dict.setdefault("None",[])
+            group_dict["None"].append(copy_rec)
 
-    if webhook.webhook_json:
-        data = frappe.render_template(webhook.webhook_json, get_context(data_list))
-        data = json.loads(data)
-
-    return data
+    for key,value in group_dict.items():
+        data = None
+        if webhook.webhook_json:
+            data = frappe.render_template(webhook.webhook_json, get_context(value))
+            data = json.loads(data)
+        else:
+            data = json.loads(value)
+        data_list.append({key:data})
+    return data_list
 
 
 @frappe.whitelist()
