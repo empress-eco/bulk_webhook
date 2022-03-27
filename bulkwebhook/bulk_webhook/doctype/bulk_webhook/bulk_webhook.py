@@ -4,7 +4,6 @@
 from __future__ import unicode_literals
 from datetime import timedelta
 import datetime
-from console import console
 import requests
 import base64
 import hashlib

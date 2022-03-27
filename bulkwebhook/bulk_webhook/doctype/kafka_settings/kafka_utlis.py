@@ -1,8 +1,6 @@
 from kafka import KafkaProducer
-from kafka.errors import KafkaError
 import frappe
 import json
-from console import console
 
 
 def get_producer(settings_name):
@@ -27,7 +25,6 @@ def send_kafka(settings_name, topic, key, value):
         .add_callback(on_send_success)
         .add_errback(on_send_error)
     )
-    # producer.flush()
     res = future.get(timeout=60)
     return res
 
@@ -45,7 +42,6 @@ def on_send_success(record_metadata):
 
 
 def on_send_error(excp):
-    console("I am an errback", exc_info=excp).log()
     frappe.log_error(str(excp))
     # handle exception
 
