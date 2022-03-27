@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 from datetime import timedelta
 import datetime
-from six.moves.urllib.parse import urlparse
+from console import console
 import requests
 import base64
 import hashlib
@@ -23,6 +23,7 @@ from frappe.utils import (
 from frappe.utils.jinja import validate_template
 from frappe.utils.safe_exec import get_safe_globals, NamespaceDict, safe_exec
 from types import FunctionType, MethodType, ModuleType
+from bulkwebhook.bulk_webhook.doctype.kafka_settings.kafka_utlis import send_kafka
 
 
 WEBHOOK_SECRET_HEADER = "X-Frappe-Webhook-Signature"
@@ -31,21 +32,7 @@ WEBHOOK_SECRET_HEADER = "X-Frappe-Webhook-Signature"
 class BulkWebhook(Document):
     def validate(self):
         self.validate_mandatory_fields()
-        self.validate_request_url()
         self.validate_request_body()
-
-    def validate_request_url(self):
-        try:
-            url = self.request_url
-            if not url:
-                url = frappe.get_value(
-                    "Bulk Webhook Settings", "Bulk Webhook Settings", "url"
-                )
-            request_url = urlparse(url).netloc
-            if not request_url:
-                raise frappe.ValidationError
-        except Exception as e:
-            frappe.throw(_("Check Request URL"), exc=e)
 
     def validate_request_body(self):
         if not self.source == "Report":
@@ -171,7 +158,7 @@ def get_context(data):
 def enqueue_bulk_webhook(kwargs):
     webhook = frappe.get_doc("Bulk Webhook", kwargs)
     headers = get_webhook_headers(webhook)
-    data_list = get_webhook_data(webhook)  # update here
+    data_list = get_webhook_data(webhook)
     if data_list and len(data_list) == 0:
         return
     url = webhook.request_url
@@ -203,8 +190,6 @@ def enqueue_bulk_webhook(kwargs):
                     else:
                         raise e
     elif webhook.request_type == "Kafka":
-        from bulkwebhook.bulk_webhook.doctype.kafka_settings.kafka import send_kafka
-
         for data_row in data_list:
             r = {}
             try:
@@ -214,10 +199,18 @@ def enqueue_bulk_webhook(kwargs):
                     data_row[0],
                     data_row[1],
                 )
-                log_request(webhook.kafka_topic, webhook.kafka_settings, data_row[1], r)
+                log_request(
+                    webhook.kafka_topic, webhook.kafka_settings, data_row[1], str(r)
+                )
 
             except Exception as e:
-                log_request(webhook.kafka_topic, webhook.kafka_settings, data_row[1], r)
+                frappe.log_error(str(e))
+                log_request(
+                    "Error: " + webhook.kafka_topic,
+                    webhook.kafka_settings,
+                    data_row[1],
+                    r,
+                )
 
 
 def enqueue_bulk_webhooks(frequency):
@@ -242,7 +235,7 @@ def log_request(url, headers, data, res):
             "url": url,
             "headers": json.dumps(headers, indent=4) if headers else None,
             "data": json.dumps(data, indent=4) if isinstance(data, dict) else data,
-            "response": json.dumps(res.json(), indent=4) if res else None,
+            "response": json.dumps(res, indent=4) if res else None,
         }
     )
 

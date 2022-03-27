@@ -2,6 +2,7 @@ from kafka import KafkaProducer
 from kafka.errors import KafkaError
 import frappe
 import json
+from console import console
 
 
 def get_producer(settings_name):
@@ -11,9 +12,8 @@ def get_producer(settings_name):
         client_id=settings.client_id,
         value_serializer=lambda e: json.dumps(e).encode("ascii"),
         key_serializer=lambda e: json.dumps(e).encode("ascii"),
-        retries=3,
         security_protocol="SASL_SSL",
-        sasl_mechanism="PLAN",
+        sasl_mechanism="PLAIN",
         sasl_plain_username=settings.get_password("api_key"),
         sasl_plain_password=settings.get_password("api_secret"),
     )
@@ -22,20 +22,32 @@ def get_producer(settings_name):
 
 def send_kafka(settings_name, topic, key, value):
     producer = get_producer(settings_name)
-    res = producer.send(topic=topic, key=key, value=value)
-    producer.flush()
+    future = (
+        producer.send(topic=topic, key=key, value=value)
+        .add_callback(on_send_success)
+        .add_errback(on_send_error)
+    )
+    # producer.flush()
+    res = future.get(timeout=60)
     return res
 
 
-# def on_send_success(record_metadata):
-#     print(record_metadata.topic)
-#     print(record_metadata.partition)
-#     print(record_metadata.offset)
+def on_send_success(record_metadata):
+    frappe.log_error(
+        str(
+            {
+                "topic": record_metadata.topic,
+                "partition": record_metadata.partition,
+                "offset": record_metadata.offset,
+            }
+        )
+    )
 
 
-# def on_send_error(excp):
-#     log.error("I am an errback", exc_info=excp)
-#     # handle exception
+def on_send_error(excp):
+    console("I am an errback", exc_info=excp).log()
+    frappe.log_error(str(excp))
+    # handle exception
 
 
 # # produce asynchronously with callbacks
