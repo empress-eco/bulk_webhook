@@ -178,11 +178,11 @@ def enqueue_bulk_webhook(kwargs):
                     )
                     r.raise_for_status()
                     frappe.logger().debug({"webhook_success": r.text})
-                    log_request(url, headers, data_row[1], r)
+                    log_request(url, headers, data_row[1], r.json())
                     break
                 except Exception as e:
                     frappe.logger().debug({"webhook_error": e, "try": i + 1})
-                    log_request(url, headers, data_row[1], r)
+                    log_request(url, headers, data_row[1], r.json())
                     sleep(3 * i + 1)
                     if i != 2:
                         continue
