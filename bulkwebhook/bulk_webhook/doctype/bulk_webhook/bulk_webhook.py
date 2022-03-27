@@ -140,7 +140,7 @@ class BulkWebhook(Document):
 
         data_list = get_webhook_data(self)
 
-        if len(data_list)==0:
+        if len(data_list) == 0:
             return
 
         enqueue(
@@ -171,32 +171,32 @@ def get_context(data):
 def enqueue_bulk_webhook(kwargs):
     webhook = frappe.get_doc("Bulk Webhook", kwargs)
     headers = get_webhook_headers(webhook)
-    data_list = get_webhook_data(webhook) #update here 
-    if len(data_list)==0:
+    data_list = get_webhook_data(webhook)  # update here
+    if data_list and len(data_list) == 0:
         return
     url = webhook.request_url
-    
+
     if not url:
         url = frappe.get_value("Bulk Webhook Settings", "Bulk Webhook Settings", "url")
     if webhook.request_type == "API":
-        for key,value in data_list.items():
+        for data_row in data_list:
             for i in range(3):
                 r = {}
                 try:
                     r = requests.request(
                         method=webhook.request_method,
                         url=url,
-                        data=json.dumps(value, default=str),
+                        data=json.dumps(data_row[1], default=str),
                         headers=headers,
                         timeout=5,
                     )
                     r.raise_for_status()
                     frappe.logger().debug({"webhook_success": r.text})
-                    log_request(url, headers, value, r)
+                    log_request(url, headers, data_row[1], r)
                     break
                 except Exception as e:
                     frappe.logger().debug({"webhook_error": e, "try": i + 1})
-                    log_request(url, headers, value, r)
+                    log_request(url, headers, data_row[1], r)
                     sleep(3 * i + 1)
                     if i != 2:
                         continue
@@ -204,16 +204,20 @@ def enqueue_bulk_webhook(kwargs):
                         raise e
     elif webhook.request_type == "Kafka":
         from bulkwebhook.bulk_webhook.doctype.kafka_settings.kafka import send_kafka
-        for key,value in data_list.items():
-            r = {}    
-            try:
-                r = send_kafka(webhook.kafka_settings, webhook.kafka_topic, key, value)
-                log_request(url, headers, value, r)
-                        
-            except Exception as e:
-                log_request(webhook.kafka_topic, webhook.kafka_settings, value, r)
-            
 
+        for data_row in data_list:
+            r = {}
+            try:
+                r = send_kafka(
+                    webhook.kafka_settings,
+                    webhook.kafka_topic,
+                    data_row[0],
+                    data_row[1],
+                )
+                log_request(webhook.kafka_topic, webhook.kafka_settings, data_row[1], r)
+
+            except Exception as e:
+                log_request(webhook.kafka_topic, webhook.kafka_settings, data_row[1], r)
 
 
 def enqueue_bulk_webhooks(frequency):
@@ -295,21 +299,22 @@ def get_webhook_data(webhook):
             ):
                 copy_rec[key] = str(value)
         if webhook.group_by:
-            if copy_rec.get(webhook.group_by):
-                group_dict.setdefault(webhook.group_by,[])
-                group_dict[webhook.group_by].append(copy_rec)
+            if rec.get(webhook.group_by):
+                group_dict.setdefault(rec.get(webhook.group_by), [])
+                group_dict[rec.get(webhook.group_by)].append(copy_rec)
         else:
-            group_dict.setdefault("None",[])
+            group_dict.setdefault("None", [])
             group_dict["None"].append(copy_rec)
 
-    for key,value in group_dict.items():
+    for key, value in group_dict.items():
         data = None
         if webhook.webhook_json:
             data = frappe.render_template(webhook.webhook_json, get_context(value))
             data = json.loads(data)
         else:
             data = json.loads(value)
-        data_list.append({key:data})
+        data_list.append([key, data])
+
     return data_list
 
 
