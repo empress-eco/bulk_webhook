@@ -89,13 +89,27 @@ app_license = "MIT"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    "*": {
+        "validate": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+        "onload": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+        "before_insert": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+        "after_insert": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+        "before_naming": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+        "before_change": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+        "before_update_after_submit": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+        "before_validate": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+        "before_save": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+        "autoname": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+        "on_update": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+        "on_cancel": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+        "on_trash": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+        "on_submit": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+        "on_update_after_submit": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+        "on_change": "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_webhooks",
+    }
+}
+
 
 # Scheduled Tasks
 # ---------------
