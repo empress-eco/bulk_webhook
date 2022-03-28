@@ -53,7 +53,7 @@ def get_context(doc):
 
 def enqueue_webhook(doc, kafka_hook):
     hook = frappe.get_doc("Kafka Hook", kafka_hook.get("name"))
-    data = get_webhook_data(doc, kafka_hook)
+    data = get_webhook_data(doc, hook)
     try:
         r = send_kafka(
             hook.kafka_settings,
