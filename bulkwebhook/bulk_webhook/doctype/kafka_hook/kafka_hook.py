@@ -94,7 +94,7 @@ def run_webhooks(doc, method):
     if frappe.flags.kafkahook_executed is None:
         frappe.flags.kafkahook_executed = {}
 
-    if frappe.flags.webhooks is None:
+    if frappe.flags.kafkahook is None:
         # load webhooks from cache
         webhooks = frappe.cache().get_value("kafkahook")
         if webhooks is None:
