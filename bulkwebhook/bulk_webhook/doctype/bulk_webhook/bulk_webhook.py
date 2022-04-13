@@ -126,7 +126,8 @@ class BulkWebhook(Document):
 
         data_list = get_webhook_data(self)
 
-        if len(data_list) == 0:
+        if not data_list or len(data_list) == 0:
+            frappe.msgprint(_("No Data to send"))
             return
 
         enqueue(
@@ -158,7 +159,7 @@ def enqueue_bulk_webhook(kwargs):
     webhook = frappe.get_doc("Bulk Webhook", kwargs)
     headers = get_webhook_headers(webhook)
     data_list = get_webhook_data(webhook)
-    if data_list and len(data_list) == 0:
+    if not data_list or len(data_list) == 0:
         return
     url = webhook.request_url
 
