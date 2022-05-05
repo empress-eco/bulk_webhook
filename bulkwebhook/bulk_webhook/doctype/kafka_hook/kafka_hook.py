@@ -21,6 +21,9 @@ class KafkaHook(Document):
     def on_update(self):
         frappe.cache().delete_value("kafkahook")
 
+    def on_trash(self):
+        frappe.cache().delete_value("kafkahook")
+
     def validate_docevent(self):
         if self.webhook_doctype:
             is_submittable = frappe.get_value(
