@@ -25,7 +25,7 @@ def send_kafka(settings_name, topic, key, value):
         .add_callback(on_send_success)
         .add_errback(on_send_error)
     )
-    res = future.get(timeout=60)
+    res = future.get(timeout=500)
     return res
 
 
