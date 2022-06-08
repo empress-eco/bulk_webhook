@@ -132,10 +132,11 @@ class BulkWebhook(Document):
 
         enqueue(
             method=enqueue_bulk_webhook,
-            queue="short",
+            queue="long",
             timeout=10000,
             is_async=True,
             kwargs=self.name,
+            job_name="Bulk Webhook: " + self.title,
         )
 
     def dynamic_date_filters_set(self):
@@ -204,7 +205,7 @@ def enqueue_bulk_webhook(kwargs):
                 )
 
             except Exception as e:
-                frappe.log_error(str(e))
+                frappe.log_error(frappe.get_traceback(), str(webhook.title + ": " + str(e))[0:140])
                 log_request(
                     "Error: " + webhook.kafka_topic,
                     webhook.kafka_settings,
@@ -220,10 +221,11 @@ def enqueue_bulk_webhooks(frequency):
     for webhook in webhooks:
         enqueue(
             method=enqueue_bulk_webhook,
-            queue="short",
+            queue="long",
             timeout=10000,
             is_async=True,
             kwargs=webhook.name,
+            job_name="Bulk Webhook: " + webhook.title,
         )
 
 

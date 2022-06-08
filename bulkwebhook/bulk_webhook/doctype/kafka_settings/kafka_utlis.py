@@ -25,10 +25,11 @@ def send_kafka(settings_name, topic, key, value):
         .add_callback(on_send_success)
         .add_errback(on_send_error)
     )
-    res = future.get(timeout=500)
+    res = future.get(timeout=120)
     return res
 
 
+# NOTE: The on_send_success function is not working.
 def on_send_success(record_metadata):
     frappe.log_error(
         str(
@@ -41,6 +42,7 @@ def on_send_success(record_metadata):
     )
 
 
+# NOTE: the on_send_error function is not working.
 def on_send_error(excp):
     frappe.log_error(str(excp))
     # handle exception
