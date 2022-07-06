@@ -65,16 +65,19 @@ class BulkWebhook(Document):
         data = _locals.get(self.script_return_variable)
         return data
 
-    def get_method_data(self):
-        kwargs = json.loads(self.method_parameters)
+    def get_method_data(self, get_method_data=None):
+        kwargs = get_method_data
+        if not kwargs:
+            kwargs = json.loads(self.method_parameters)
         data = frappe.get_attr(self.method)(**kwargs)
         return data
 
-    def get_report_data(self):
+    def get_report_data(self, report_filters=None):
         """Returns file in for the report in given format"""
         report = frappe.get_doc("Report", self.report)
-
-        self.filters = frappe.parse_json(self.filters) if self.filters else {}
+        self.filters = report_filters
+        if not self.filters:
+            self.filters = frappe.parse_json(self.filters) if self.filters else {}
 
         if self.report_type == "Report Builder" and self.data_modified_till:
             self.filters["modified"] = (
@@ -135,7 +138,7 @@ class BulkWebhook(Document):
             queue="long",
             timeout=10000,
             is_async=True,
-            kwargs=self.name,
+            bulk_webhook_name=self.name,
             job_name="Bulk Webhook: " + self.title,
         )
 
@@ -156,10 +159,12 @@ def get_context(data):
     return {"data": data, "utils": get_safe_globals().get("frappe").get("utils")}
 
 
-def enqueue_bulk_webhook(kwargs):
-    webhook = frappe.get_doc("Bulk Webhook", kwargs)
+def enqueue_bulk_webhook(
+    bulk_webhook_name, method_parameters=None, report_filters=None
+):
+    webhook = frappe.get_doc("Bulk Webhook", bulk_webhook_name)
     headers = get_webhook_headers(webhook)
-    data_list = get_webhook_data(webhook)
+    data_list = get_webhook_data(webhook, method_parameters, report_filters)
     if not data_list or len(data_list) == 0:
         return
     url = webhook.request_url
@@ -181,7 +186,7 @@ def enqueue_bulk_webhook(kwargs):
                     r.raise_for_status()
                     frappe.logger().debug({"webhook_success": r.text})
                     log_request(url, headers, data_row[1], r.json())
-                    break
+                    return r.json()
                 except Exception as e:
                     frappe.logger().debug({"webhook_error": e, "try": i + 1})
                     log_request(url, headers, data_row[1], r.json())
@@ -203,9 +208,12 @@ def enqueue_bulk_webhook(kwargs):
                 log_request(
                     webhook.kafka_topic, webhook.kafka_settings, data_row[1], str(r)
                 )
+                return str(r)
 
             except Exception as e:
-                frappe.log_error(frappe.get_traceback(), str(webhook.title + ": " + str(e))[0:140])
+                frappe.log_error(
+                    frappe.get_traceback(), str(webhook.title + ": " + str(e))[0:140]
+                )
                 log_request(
                     "Error: " + webhook.kafka_topic,
                     webhook.kafka_settings,
@@ -272,12 +280,12 @@ def get_webhook_headers(webhook):
     return headers
 
 
-def get_webhook_data(webhook):
+def get_webhook_data(webhook, method_parameters=None, report_filters=None):
     data = {}
     if webhook.source == "Report":
-        _data = webhook.get_report_data()
+        _data = webhook.get_report_data(report_filters)
     elif webhook.source == "Method":
-        _data = webhook.get_method_data()
+        _data = webhook.get_method_data(method_parameters)
     elif webhook.source == "Script":
         _data = webhook.get_script_data()
     if not _data:
