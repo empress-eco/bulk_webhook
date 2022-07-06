@@ -5,10 +5,10 @@ from frappe import _
 @frappe.whitelist()
 def resend_single_kafkahook(doctype, doc_name, kafkahook_name=None):
     """
-    API Path: <URL>://bulk_webhook.api.kafka_hook.resend_single_kafkahook
+    API Path: <URL>://bulkwebhook.bulk_webhook.api.kafka_hook.resend_single_kafkahook
     doctype: Data - Document Type Name to fire the Kafka Hook on. e.g. "Sales Order"
     doc_name: Data - Name of document for which to fire the Kafka Hook. e.g. "SAL-ORD-JUJ002"
-    kafkahook_name: Document Name of the Kafka Hook to fire. e.g. "HOOK-0016"
+    kafkahook_name (Optional): Document Name of the Kafka Hook to fire. e.g. "HOOK-0016"
     """
     if not kafkahook_name:
         kafkahook_name = frappe.get_value(
@@ -25,7 +25,7 @@ def resend_single_kafkahook(doctype, doc_name, kafkahook_name=None):
 
 def resend_kafkahook(kafkahook_name, doctype_name, doc_list):
     """
-    API Path: <URL>://bulk_webhook.api.kafka_hook.resend_kafkahook
+    API Path: <URL>://bulkwebhook.bulk_webhook.api.kafka_hook.resend_kafkahook
     kafkahook_name: Document Name of the Kafka Hook to fire. e.g. "HOOK-0016"
     doctype_name: Document Type Name to fire the Kafka Hook on. e.g. "Sales Order"
     doc_list: list - List of Names of documents for which to fire the Kafka Hook. e.g. ["SAL-ORD-JUJ001", "SAL-ORD-JUJ002"]
@@ -51,7 +51,7 @@ def resend_kafkahook(kafkahook_name, doctype_name, doc_list):
 @frappe.whitelist()
 def resend_kafkahook_for_docs(args):
     """
-    API Path: <URL>://bulk_webhook.api.kafka_hook.resend_kafkahook_for_docs
+    API Path: <URL>://bulkwebhook.bulk_webhook.api.kafka_hook.resend_kafkahook_for_docs
     args incloudes:
     kafkahook_name: Document Name of the kafkahook to fire. e.g. "HOOK-0016"
     doctype_name: Document Type Name to fire the kafkahook on. e.g. "Sales Order"
