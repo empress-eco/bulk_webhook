@@ -3,6 +3,7 @@
 
 import frappe
 from frappe import _
+from frappe.utils.background_jobs import enqueue
 
 
 @frappe.whitelist()
@@ -75,6 +76,12 @@ def resend_kafkahook_for_docs(args):
 
     for doc_name in doc_list:
         doc = frappe.get_doc(doctype_name, doc_name)
-        enqueue_webhook(doc, kafkahook)
-    frappe.db.commit()
-    return "Webhook sent successfully"
+        enqueue(
+            method=enqueue_webhook,
+            queue="long",
+            timeout=10000,
+            is_async=True,
+            doc=doc,
+            kafka_hook=kafkahook,
+        )
+    return "Webhook sending is schdeduled"
