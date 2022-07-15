@@ -232,7 +232,7 @@ def enqueue_bulk_webhooks(frequency):
             queue="long",
             timeout=10000,
             is_async=True,
-            kwargs=webhook.name,
+            bulk_webhook_name=webhook.name,
             job_name="Bulk Webhook: " + webhook.title,
         )
 
