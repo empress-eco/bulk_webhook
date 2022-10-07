@@ -62,7 +62,7 @@ def enqueue_webhook(doc, kafka_hook):
             hook.kafka_settings,
             hook.kafka_topic,
             None,
-            json.dumps(data, default=str),
+            data,
         )
         log_request(hook.kafka_topic, hook.kafka_settings, data, str(r))
 
