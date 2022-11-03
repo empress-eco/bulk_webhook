@@ -53,7 +53,7 @@ class KafkaHook(Document):
 
 
 def enqueue_webhook(doc: Document, kafka_hook: frappe._dict):
-    hook: KafkaHook = frappe.get_doc("Kafka Hook", kafka_hook.name)
+    hook: KafkaHook = frappe.get_cached_doc("Kafka Hook", kafka_hook.name)
     data = get_webhook_data(doc, hook)
 
     try:
