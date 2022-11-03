@@ -1,11 +1,15 @@
-from kafka import KafkaProducer
-import frappe
 import json
 
+import frappe
+import bulkwebhook
+from kafka import KafkaProducer
 
-def get_producer(settings_name):
+
+def get_kafka_client(settings_name: str):
+    """Create a KafkaProducer instance for the given settings name."""
     settings = frappe.get_cached_doc("Kafka Settings", settings_name)
-    producer = KafkaProducer(
+
+    return KafkaProducer(
         bootstrap_servers=settings.bootstrap_servers,
         client_id=settings.client_id,
         value_serializer=lambda e: json.dumps(e).encode("ascii"),
@@ -15,11 +19,25 @@ def get_producer(settings_name):
         sasl_plain_username=settings.get_password("api_key"),
         sasl_plain_password=settings.get_password("api_secret"),
     )
-    return producer
+
+
+def get_kafka_producer(settings_name: str) -> KafkaProducer:
+    """Return a KafkaProducer instance for the given settings name. If the producer is already
+    created, return the same instance. Otherwise, create a new instance and return it.
+    """
+    if frappe.local.site not in bulkwebhook.PRODUCER_MAP:
+        bulkwebhook.PRODUCER_MAP[frappe.local.site] = {}
+
+    if settings_name not in bulkwebhook.PRODUCER_MAP[frappe.local.site]:
+        bulkwebhook.PRODUCER_MAP[frappe.local.site][settings_name] = get_kafka_client(
+            settings_name
+        )
+
+    return bulkwebhook.PRODUCER_MAP[frappe.local.site][settings_name]
 
 
 def send_kafka(settings_name, topic, key, value):
-    producer = get_producer(settings_name)
+    producer = get_kafka_producer(settings_name)
     future = (
         producer.send(topic=topic, key=key, value=value)
         .add_callback(on_send_success)
