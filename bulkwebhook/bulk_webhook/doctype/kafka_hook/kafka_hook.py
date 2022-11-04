@@ -14,12 +14,12 @@ from bulkwebhook.bulk_webhook.doctype.bulk_webhook.bulk_webhook import log_reque
 def get_safe_frappe_utils():
     from frappe.utils.safe_exec import add_data_utils
 
-    data_utils = {}
+    data_utils = frappe._dict()
     add_data_utils(data_utils)
     return data_utils
 
 
-WEBHOOK_CONTEXT = get_safe_frappe_utils()
+WEBHOOK_CONTEXT = {"utils": get_safe_frappe_utils()}
 
 
 class KafkaHook(Document):
