@@ -7,6 +7,7 @@ from frappe.model.document import Document
 
 
 class KafkaSettings(Document):
-    def on_update(self):
+    def clear_cache(self):
         if frappe.local.site in bulkwebhook.PRODUCER_MAP:
             bulkwebhook.PRODUCER_MAP[frappe.local.site].pop(self.name, None)
+        return super().clear_cache()
