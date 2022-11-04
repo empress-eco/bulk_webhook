@@ -60,7 +60,7 @@ class KafkaHook(Document):
         validate_template(self.webhook_json)
 
 
-def enqueue_webhook(doc: Document, kafka_hook: frappe._dict):
+def run_kafka_hook(doc: Document, kafka_hook: frappe._dict):
     hook: KafkaHook = frappe.get_cached_doc("Kafka Hook", kafka_hook.name)
     data = get_webhook_data(doc, hook)
 
@@ -84,16 +84,19 @@ def enqueue_webhook(doc: Document, kafka_hook: frappe._dict):
 
 
 def get_webhook_data(doc: Document, kafka_hook: KafkaHook) -> dict:
+    """Returns webhook data (generated from KafkaHook.webhook_json) for the given document and webhook"""
     data = {}
     doc = doc.as_dict(convert_dates_to_str=True)
-    data = frappe.render_template(kafka_hook.webhook_json, context={**WEBHOOK_CONTEXT, "doc": doc})
+    data = frappe.render_template(
+        kafka_hook.webhook_json, context={**WEBHOOK_CONTEXT, "doc": doc}
+    )
     data = json.loads(data)
     return data
 
 
 def enqueue_kafka_hook(doc: Document, webhook: frappe._dict):
     frappe.enqueue(
-        "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.enqueue_webhook",
+        "bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook.run_kafka_hook",
         enqueue_after_commit=True,
         doc=doc,
         kafka_hook=webhook,
