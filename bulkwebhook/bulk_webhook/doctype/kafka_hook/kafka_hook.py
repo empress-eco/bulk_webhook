@@ -136,6 +136,15 @@ def run_webhooks(doc: Document, method: str):
     ):
         return
 
+    event_list = ["on_update", "after_insert", "on_submit", "on_cancel", "on_trash"]
+    # value change is not applicable in insert
+    if not doc.flags.in_insert:
+        event_list.extend(["on_change", "before_update_after_submit"])
+
+    # skip if method is not in applicable event list
+    if method not in event_list:
+        return
+
     if frappe.flags.kafkahook_executed is None:
         frappe.flags.kafkahook_executed = {}
 
@@ -147,24 +156,23 @@ def run_webhooks(doc: Document, method: str):
     if not webhooks_for_doc:
         return
 
-    event_list = ["on_update", "after_insert", "on_submit", "on_cancel", "on_trash"]
-
-    # value change is not applicable in insert
-    if not doc.flags.in_insert:
-        event_list.append("on_change")
-        event_list.append("before_update_after_submit")
-
     for webhook in webhooks_for_doc:
-        trigger_webhook = False
-        event = method if method in event_list else None
+        if webhook.webhook_docevent != method:
+            continue
 
+        # skip if webhook already executed for this doc in this request
+        if webhook.name in frappe.flags.kafkahook_executed.get(doc.name, []):
+            continue
+
+        # skip if webhook condition is not fulfilled
+        trigger_webhook = False
         if not webhook.condition:
             trigger_webhook = True
         elif frappe.safe_eval(
             webhook.condition, eval_locals={**WEBHOOK_CONTEXT, "doc": doc}
         ):
             trigger_webhook = True
+        if not trigger_webhook:
+            continue
 
-        if trigger_webhook and event and webhook.webhook_docevent == event:
-            if webhook.name not in frappe.flags.kafkahook_executed.get(doc.name, []):
-                enqueue_kafka_hook(doc, webhook)
+        enqueue_kafka_hook(doc, webhook)
