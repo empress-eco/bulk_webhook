@@ -52,7 +52,9 @@ class KafkaHook(Document):
         temp_doc = frappe.new_doc(self.webhook_doctype)
         if self.condition:
             try:
-                frappe.safe_eval(self.condition, eval_locals={**WEBHOOK_CONTEXT, "doc": temp_doc})
+                frappe.safe_eval(
+                    self.condition, eval_locals={**WEBHOOK_CONTEXT, "doc": temp_doc}
+                )
             except Exception as e:
                 frappe.throw(_(e))
 
@@ -158,7 +160,9 @@ def run_webhooks(doc: Document, method: str):
 
         if not webhook.condition:
             trigger_webhook = True
-        elif frappe.safe_eval(webhook.condition, eval_locals={**WEBHOOK_CONTEXT, "doc": doc}):
+        elif frappe.safe_eval(
+            webhook.condition, eval_locals={**WEBHOOK_CONTEXT, "doc": doc}
+        ):
             trigger_webhook = True
 
         if trigger_webhook and event and webhook.webhook_docevent == event:

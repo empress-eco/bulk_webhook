@@ -4,5 +4,6 @@
 # import frappe
 import unittest
 
+
 class TestKafkaSettings(unittest.TestCase):
-	pass
+    pass
