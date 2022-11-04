@@ -9,9 +9,17 @@ from frappe.model.document import Document
 from frappe.utils.jinja import validate_template
 from bulkwebhook.bulk_webhook.doctype.kafka_settings.kafka_utlis import send_kafka
 from bulkwebhook.bulk_webhook.doctype.bulk_webhook.bulk_webhook import log_request
-from frappe.integrations.doctype.webhook.webhook import get_context as get_webhook_context
 
-WEBHOOK_CONTEXT = get_webhook_context(doc=None)
+
+def get_safe_frappe_utils():
+    from frappe.utils.safe_exec import add_data_utils
+
+    data_utils = {}
+    add_data_utils(data_utils)
+    return data_utils
+
+
+WEBHOOK_CONTEXT = get_safe_frappe_utils()
 
 
 class KafkaHook(Document):
