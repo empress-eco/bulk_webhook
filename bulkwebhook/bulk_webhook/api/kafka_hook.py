@@ -37,7 +37,7 @@ def resend_kafkahook(kafkahook_name, doctype_name, doc_list):
     """
     kafkahook = {}
     kafkahook["name"] = kafkahook_name
-    from bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook import enqueue_webhook
+    from bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook import run_kafka_hook
     if isinstance(doc_list, str):
         doc_list = json.loads(doc_list)
 
@@ -45,7 +45,7 @@ def resend_kafkahook(kafkahook_name, doctype_name, doc_list):
         try:
             doc = frappe.get_doc(doctype_name, doc_name)
             try:
-                enqueue_webhook(doc, kafkahook)
+                run_kafka_hook(doc, kafkahook)
                 frappe.msgprint("Webhook sent successfully")
             except Exception as e:
                 frappe.log_error(str(e), "Manual Webhook enqueue")
@@ -75,12 +75,12 @@ def resend_kafkahook_for_docs(args):
         frappe.throw("Doc List is required")
     kafkahook = {}
     kafkahook["name"] = kafkahook_name
-    from bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook import enqueue_webhook
+    from bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook import run_kafka_hook
 
     for doc_name in doc_list:
         doc = frappe.get_doc(doctype_name, doc_name)
         enqueue(
-            method=enqueue_webhook,
+            method=run_kafka_hook,
             queue="long",
             timeout=10000,
             is_async=True,

@@ -4,5 +4,6 @@
 # import frappe
 import unittest
 
+
 class TestBulkWebhookSettings(unittest.TestCase):
-	pass
+    pass

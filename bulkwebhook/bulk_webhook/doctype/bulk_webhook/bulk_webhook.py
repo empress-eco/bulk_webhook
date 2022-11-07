@@ -224,7 +224,9 @@ def enqueue_bulk_webhook(
 
 def enqueue_bulk_webhooks(frequency):
     webhooks = frappe.get_all(
-        "Bulk Webhook", filters={"enabled": 1, "frequency": frequency}, fields=["name", "title"]
+        "Bulk Webhook",
+        filters={"enabled": 1, "frequency": frequency},
+        fields=["name", "title"],
     )
     for webhook in webhooks:
         enqueue(
