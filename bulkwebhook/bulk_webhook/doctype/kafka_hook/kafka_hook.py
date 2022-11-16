@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 import json
+from typing import Dict
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -110,7 +111,7 @@ def enqueue_kafka_hook(doc: Document, webhook: frappe._dict):
     frappe.flags.kafkahook_executed.setdefault(doc.name, []).append(webhook.name)
 
 
-def generate_kafkahook() -> dict[str, list]:
+def generate_kafkahook() -> Dict[str, list]:
     webhooks = {}
     webhooks_list = frappe.get_all(
         "Kafka Hook",
