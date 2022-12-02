@@ -63,8 +63,8 @@ class KafkaHook(Document):
         validate_template(self.webhook_json)
 
 
-def run_kafka_hook(doc: Document, kafka_hook: frappe._dict):
-    hook: KafkaHook = frappe.get_cached_doc("Kafka Hook", kafka_hook.name)
+def run_kafka_hook(doc: Document, kafka_hook: dict):
+    hook: KafkaHook = frappe.get_cached_doc("Kafka Hook", kafka_hook.get("name"))
     data = get_webhook_data(doc, hook)
 
     try:
