@@ -24,12 +24,12 @@ def resend_kafkahook_for_docs(args):
         frappe.throw("Doc List is required")
     kafkahook = {}
     kafkahook["name"] = kafkahook_name
-    from bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook import enqueue_webhook
+    from bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook import enqueue_kafka_hook
 
     for doc_name in doc_list:
         doc = frappe.get_doc(doctype_name, doc_name)
         enqueue(
-            method=enqueue_webhook,
+            method=enqueue_kafka_hook,
             queue="long",
             timeout=10000,
             is_async=True,
