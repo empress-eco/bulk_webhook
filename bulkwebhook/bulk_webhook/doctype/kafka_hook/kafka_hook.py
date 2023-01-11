@@ -87,14 +87,17 @@ def run_kafka_hook(doc: Document, kafka_hook: dict):
 
 
 def get_webhook_data(doc: Document, kafka_hook: KafkaHook) -> dict:
-    """Returns webhook data (generated from KafkaHook.webhook_json) for the given document and webhook"""
-    data = {}
-    doc = doc.as_dict(convert_dates_to_str=True)
-    data = frappe.render_template(
-        kafka_hook.webhook_json, context={**WEBHOOK_CONTEXT, "doc": doc}
-    )
-    data = json.loads(data)
-    return data
+    """Returns webhook data (generated from KafkaHook.webhook_json or from Method) for the given document and webhook"""
+    if kafka_hook.process_data == "Method":
+        return frappe.get_attr(kafka_hook.webhook_method)(doc)
+    else:
+        data = {}
+        doc = doc.as_dict(convert_dates_to_str=True)
+        data = frappe.render_template(
+            kafka_hook.webhook_json, context={**WEBHOOK_CONTEXT, "doc": doc}
+        )
+        data = json.loads(data)
+        return data
 
 
 def enqueue_kafka_hook(doc: Document, webhook: frappe._dict):
