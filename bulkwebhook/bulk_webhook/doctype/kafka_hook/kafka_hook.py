@@ -84,8 +84,10 @@ def run_kafka_hook(
             doc = frappe.get_doc(doctype, doc_name)
             _run_kafka_hook(hook, doc)
         except Exception as e:
-            if not is_from_request:
-                frappe.log_error(title="Error running Kafka Hook")
+            if is_from_request:
+                raise
+
+            frappe.log_error(title="Error running Kafka Hook")
 
 
 def _run_kafka_hook(hook, doc):
@@ -147,9 +149,7 @@ def run_webhooks(doc: Document, method: str):
     ):
         return
 
-    event_list = {
-        "on_update", "after_insert", "on_submit", "on_cancel", "on_trash"
-    }
+    event_list = {"on_update", "after_insert", "on_submit", "on_cancel", "on_trash"}
 
     # value change is not applicable in insert
     if not doc.flags.in_insert:
