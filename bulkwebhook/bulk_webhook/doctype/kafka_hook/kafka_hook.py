@@ -83,7 +83,7 @@ def run_kafka_hook(
         try:
             doc = frappe.get_doc(doctype, doc_name)
             _run_kafka_hook(hook, doc)
-        except Exception as e:
+        except Exception:
             if is_from_request:
                 raise
 
