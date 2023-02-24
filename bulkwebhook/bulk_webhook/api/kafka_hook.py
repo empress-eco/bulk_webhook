@@ -1,7 +1,8 @@
 # Copyright (c) 2022, Aakvatech and contributors
 # For license information, please see license.txt
 
-import frappe, json
+import frappe
+import json
 from frappe import _
 from frappe.utils.background_jobs import enqueue
 from bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook import run_kafka_hook
@@ -9,11 +10,16 @@ from bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook import run_kafka_hoo
 
 @frappe.whitelist()
 def resend_single_kafkahook(doctype, doc_name, kafkahook_name=None):
-    """
+    """Resend a Kafka Hook for a single document
     API Path: <URL>://bulkwebhook.bulk_webhook.api.kafka_hook.resend_single_kafkahook
+
+    Parameters:
     doctype: Data - Document Type Name to fire the Kafka Hook on. e.g. "Sales Order"
     doc_name: Data - Name of document for which to fire the Kafka Hook. e.g. "SAL-ORD-JUJ002"
     kafkahook_name (Optional): Document Name of the Kafka Hook to fire. e.g. "HOOK-0016"
+
+    Returns:
+    dict: {"success": True, "message": "Kafka Hook fired successfully"}
     """
 
     if not kafkahook_name:
@@ -27,6 +33,28 @@ def resend_single_kafkahook(doctype, doc_name, kafkahook_name=None):
         frappe.throw(
             _("Please set a webhook in the Setup > Webhooks with blank condition")
         )
+    resend_kafkahook(kafkahook_name, doctype, [doc_name])
+
+
+@frappe.whitelist()
+def resend_kafkahook(kafkahook_name, doctype_name, doc_list):
+    """API to resend a Kafka Hook
+    API Path: <URL>://bulkwebhook.bulk_webhook.api.kafka_hook.resend_kafkahook
+
+    Parameters:
+    kafkahook_name: Document Name of the Kafka Hook to fire. e.g. "HOOK-0016"
+    doctype_name: Document Type Name to fire the Kafka Hook on. e.g. "Sales Order"
+    doc_list: list - List of Names of documents for which to fire the Kafka Hook. e.g. ["SAL-ORD-JUJ001", "SAL-ORD-JUJ002"]
+
+    Returns:
+    dict: {"success": True, "message": "Kafka Hook fired successfully"}
+    """
+
+    kafkahook = {}
+    kafkahook["name"] = kafkahook_name
+    from bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook import run_kafka_hook
+    if isinstance(doc_list, str):
+        doc_list = json.loads(doc_list)
 
     run_kafka_hook(kafkahook_name, doctype=doctype, doc_list=[doc_name])
     frappe.msgprint("Webhook sent successfully")
@@ -34,7 +62,7 @@ def resend_single_kafkahook(doctype, doc_name, kafkahook_name=None):
 
 @frappe.whitelist()
 def resend_kafkahook_for_docs(args):
-    """
+    """API to send webhook for a list of documents
     API Path: <URL>://bulkwebhook.bulk_webhook.api.kafka_hook.resend_kafkahook_for_docs
     args includes:
     kafkahook_name: Document Name of the kafkahook to fire. e.g. "HOOK-0016"
