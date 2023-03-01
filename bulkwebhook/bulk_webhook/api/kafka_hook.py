@@ -34,7 +34,7 @@ def resend_single_kafkahook(doctype, doc_name, kafkahook_name=None):
             _("Please set a webhook in the Setup > Webhooks with blank condition")
         )
 
-    run_kafka_hook(kafkahook_name, doctype=doctype_name, doc_list=[doc_list])
+    run_kafka_hook(kafkahook_name, doctype=doctype, doc_list=[doc_name])
     frappe.msgprint("Webhook sent successfully")
 
 
