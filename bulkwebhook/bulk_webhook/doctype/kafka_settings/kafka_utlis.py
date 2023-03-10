@@ -12,8 +12,8 @@ def get_kafka_client(settings_name: str):
     return KafkaProducer(
         bootstrap_servers=settings.bootstrap_servers,
         client_id=settings.client_id,
-        value_serializer=lambda e: json.dumps(e).encode("ascii"), # TODO: This is may not working with butes.
-        key_serializer=lambda e: json.dumps(e).encode("ascii"),
+        value_serializer=lambda e: serialize_data(e),
+        key_serializer=lambda e: serialize_data(e),
         security_protocol="SASL_SSL",
         sasl_mechanism="PLAIN",
         sasl_plain_username=settings.get_password("api_key"),
@@ -70,3 +70,20 @@ def on_send_error(excp):
 # producer.send("my-topic", b"raw_bytes").add_callback(on_send_success).add_errback(
 #     on_send_error
 # )
+
+
+
+def serialize_data(data):
+    """Serialize data to be sent to Kafka"""
+    serialized_data = None
+    try:
+        serialized_data = json.dumps(data).encode("ascii")
+    except TypeError:
+        try:
+            serialized_data = data.SerializeToString()
+
+        except Exception as e:
+            frappe.log_error(str(e), frappe.get_traceback())
+            frappe.throw(str(e))
+
+    return serialized_data
