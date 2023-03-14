@@ -83,25 +83,31 @@ def run_kafka_hook(
         try:
             doc = frappe.get_doc(doctype, doc_name)
             _run_kafka_hook(hook, doc)
-        except Exception as e:
-            if not is_from_request:
-                frappe.log_error(title="Error running Kafka Hook")
+        except Exception:
+            if is_from_request:
+                raise
+
+            frappe.log_error(title="Error running Kafka Hook")
 
 
 def _run_kafka_hook(hook, doc):
     data = get_webhook_data(doc, hook)
+    key = None
+    if hook.process_data == "Method" and hook.webhook_method:
+        key = data.id
 
+    r = None
     try:
         r = send_kafka(
             hook.kafka_settings,
             hook.kafka_topic,
-            None,
+            key,
             data,
         )
         log_request(hook.kafka_topic, hook.kafka_settings, data, str(r))
 
     except Exception as e:
-        frappe.log_error(str(e))
+        frappe.log_error(str(e), frappe.get_traceback())
         log_request(
             "Error: " + hook.kafka_topic,
             hook.kafka_settings,
@@ -111,14 +117,17 @@ def _run_kafka_hook(hook, doc):
 
 
 def get_webhook_data(doc: Document, kafka_hook: KafkaHook) -> dict:
-    """Returns webhook data (generated from KafkaHook.webhook_json) for the given document and webhook"""
-    data = {}
-    doc = doc.as_dict(convert_dates_to_str=True)
-    data = frappe.render_template(
-        kafka_hook.webhook_json, context={**WEBHOOK_CONTEXT, "doc": doc}
-    )
-    data = json.loads(data)
-    return data
+    """Returns webhook data (generated from KafkaHook.webhook_json or from Method) for the given document and webhook"""
+    if kafka_hook.process_data == "Method":
+        return frappe.get_attr(kafka_hook.webhook_method)(doc)
+    else:
+        data = {}
+        doc = doc.as_dict(convert_dates_to_str=True)
+        data = frappe.render_template(
+            kafka_hook.webhook_json, context={**WEBHOOK_CONTEXT, "doc": doc}
+        )
+        data = json.loads(data)
+        return data
 
 
 def generate_kafkahook() -> Dict[str, list]:
