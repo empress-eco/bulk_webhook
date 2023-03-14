@@ -92,18 +92,22 @@ def run_kafka_hook(
 
 def _run_kafka_hook(hook, doc):
     data = get_webhook_data(doc, hook)
+    key = None
+    if hook.process_data == "Method" and hook.webhook_method:
+        key = data.id
 
+    r = None
     try:
         r = send_kafka(
             hook.kafka_settings,
             hook.kafka_topic,
-            None,
+            key,
             data,
         )
         log_request(hook.kafka_topic, hook.kafka_settings, data, str(r))
 
     except Exception as e:
-        frappe.log_error(str(e))
+        frappe.log_error(str(e), frappe.get_traceback())
         log_request(
             "Error: " + hook.kafka_topic,
             hook.kafka_settings,
