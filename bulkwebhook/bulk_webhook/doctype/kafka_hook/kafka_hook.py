@@ -93,25 +93,29 @@ def run_kafka_hook(
 def _run_kafka_hook(hook, doc):
     data = get_webhook_data(doc, hook)
     key = None
+    is_protobuf_obj = None
     if hook.process_data == "Method" and hook.webhook_method:
-        key = data.id
-
+        key = data.get("data").id
+        is_protobuf_obj = True
+    
     r = None
     try:
         r = send_kafka(
             hook.kafka_settings,
             hook.kafka_topic,
             key,
-            data,
+            data.get("data"),
+            data.get("proto_obj"),
+            is_protobuf_obj
         )
-        log_request(hook.kafka_topic, hook.kafka_settings, data, str(r))
+        log_request(hook.kafka_topic, hook.kafka_settings, data.get("data"), str(r))
 
     except Exception as e:
         frappe.log_error(str(e), frappe.get_traceback())
         log_request(
             "Error: " + hook.kafka_topic,
             hook.kafka_settings,
-            data,
+            data.get("data"),
             r,
         )
 
@@ -127,7 +131,7 @@ def get_webhook_data(doc: Document, kafka_hook: KafkaHook) -> dict:
             kafka_hook.webhook_json, context={**WEBHOOK_CONTEXT, "doc": doc}
         )
         data = json.loads(data)
-        return data
+        return {"data": data, "proto_obj": None}
 
 
 def generate_kafkahook() -> Dict[str, list]:
