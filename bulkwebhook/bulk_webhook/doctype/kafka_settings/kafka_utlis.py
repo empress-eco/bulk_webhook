@@ -131,9 +131,9 @@ def send_protobuf_data(producer, setting_doc, topic, value, key, proto_obj):
     string_serializer = StringSerializer('utf8')
 
     serializer_conf = {
-        "auto.register.schemas": False,
+        "auto.register.schemas": True,
         "normalize.schemas": True,
-        "use.latest.version": True,
+        "use.latest.version": False,
         "use.deprecated.format": False
     }
     protobuf_serializer = ProtobufSerializer(
@@ -148,7 +148,7 @@ def send_protobuf_data(producer, setting_doc, topic, value, key, proto_obj):
             producer.produce(
                 topic=topic,
                 key=string_serializer(str(key)),
-                value=protobuf_serializer(value, SerializationContext(topic, MessageField.KEY)),
+                value=protobuf_serializer(value, SerializationContext(topic, MessageField.VALUE)),
                 on_delivery=callback_response
             )
             resp = producer.flush()
