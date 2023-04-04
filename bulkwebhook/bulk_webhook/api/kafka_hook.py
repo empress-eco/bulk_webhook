@@ -54,9 +54,11 @@ def resend_kafkahook(kafkahook_name, doctype_name, doc_list):
     kafkahook["name"] = kafkahook_name
     from bulkwebhook.bulk_webhook.doctype.kafka_hook.kafka_hook import run_kafka_hook
     if isinstance(doc_list, str):
-        doc_list = json.loads(doc_list)
+        doc_list = [json.loads(doc_list)]
+    elif isinstance(doc_list, list):
+        doc_list = doc_list
 
-    run_kafka_hook(kafkahook_name, doctype=doctype_name, doc_list=[doc_list])
+    run_kafka_hook(kafkahook_name, doctype=doctype_name, doc_list=doc_list)
     frappe.msgprint("Webhook sent successfully")
 
 
