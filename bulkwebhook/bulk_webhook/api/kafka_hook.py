@@ -23,7 +23,7 @@ def resend_single_kafkahook(doctype, doc_name, kafkahook_name=None):
     """
 
     if not kafkahook_name:
-        kafkahook_name = frappe.get_value(
+        kafkahook_name = frappe.get_cached_value(
             "Kafka Hook",
             {"webhook_doctype": doctype, "enabled": 1, "condition": ""},
             "name",
