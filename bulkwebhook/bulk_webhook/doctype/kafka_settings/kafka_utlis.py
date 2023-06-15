@@ -52,7 +52,7 @@ def get_kafka_producer(settings, method=None) -> KafkaProducer:
 
 
 def send_kafka(settings_name, topic, key, value, proto_obj=None, method=None):
-    setting_doc = frappe.get_doc("Kafka Settings", settings_name)
+    setting_doc = frappe.get_cached_doc("Kafka Settings", settings_name)
     producer = get_kafka_producer(setting_doc, method)
     if not method:
         future = (
