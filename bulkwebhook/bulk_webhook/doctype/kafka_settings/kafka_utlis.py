@@ -50,6 +50,32 @@ def get_kafka_producer(settings, method=None) -> KafkaProducer:
 
     return bulkwebhook.PRODUCER_MAP[frappe.local.site][settings.name]
 
+def get_schema_registry_client(setting_doc):
+    """Return a SchemaRegistryClient instance for the given settings name.
+    If the client is already created, return the same instance.
+    Otherwise, create a new instance and return it.
+    
+    args:
+        setting_doc: Kafka Settings doctype instance
+    """
+
+    if f"{setting_doc.name}_schema_registry_client" in bulkwebhook.PRODUCER_MAP[frappe.local.site]:
+        return bulkwebhook.PRODUCER_MAP[frappe.local.site][f"{setting_doc.name}_schema_registry_client"]
+    
+    else:
+        schema_registry_client = SchemaRegistryClient({
+            "url": f"{setting_doc.schema_regestry_url}",
+            "basic.auth.user.info": f"{setting_doc.username}:{setting_doc.get_password('password')}"
+        })
+        if schema_registry_client:
+            bulkwebhook.PRODUCER_MAP[frappe.local.site][f"{setting_doc.name}_schema_registry_client"] = schema_registry_client
+            return bulkwebhook.PRODUCER_MAP[frappe.local.site][f"{setting_doc.name}_schema_registry_client"]
+        else:
+            frappe.log_error(
+                "Schema Registry Client not found, Check the schema registry configuration settings", 
+                title="Schema Registry Client Error"
+            )
+            frappe.throw("Schema Registry Client not found, Please check the schema registry configuration settings")
 
 def send_kafka(settings_name, topic, key, value, proto_obj=None, method=None):
     setting_doc = frappe.get_cached_doc("Kafka Settings", settings_name)
@@ -118,16 +144,8 @@ def send_protobuf_data(producer, setting_doc, topic, value, key, proto_obj):
             key: the id used for kafka
             proto_obj: _pb2 object    
     """
-    
-    url = setting_doc.schema_regestry_url
-    usr = setting_doc.username
-    pwd = setting_doc.get_password("password")
 
-    schema_registry_client = SchemaRegistryClient({
-        "url": f"{url}",
-        "basic.auth.user.info": f"{usr}:{pwd}"
-    })
-
+    schema_registry_client = get_schema_registry_client(setting_doc)
     string_serializer = StringSerializer('utf8')
 
     serializer_conf = {
