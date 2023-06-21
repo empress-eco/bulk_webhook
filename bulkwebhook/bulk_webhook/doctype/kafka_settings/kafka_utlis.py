@@ -3,27 +3,16 @@ import json
 import frappe
 import bulkwebhook
 from kafka import KafkaProducer
-from confluent_kafka import Producer
-from confluent_kafka.schema_registry import SchemaRegistryClient
-from confluent_kafka.schema_registry.protobuf import ProtobufSerializer
-from confluent_kafka.serialization import StringSerializer, SerializationContext, MessageField
 
 
-def get_kafka_client(settings, method=None):
-    """Create a KafkaProducer or Confluent_kafka Producer instance for the given settings name."""
+def get_kafka_client(settings_name: str):
+    """
+        Create a KafkaProducer instance for the given settings name.
+        args:
+            settings_name: Kafka Settings document name
+    """
+    settings = frappe.get_cached_doc("Kafka Settings", settings_name)
 
-    if method:
-        conf = {
-            "bootstrap.servers": settings.bootstrap_servers,
-            "client.id": settings.client_id,
-            "security.protocol":"SASL_SSL",
-            "sasl.mechanism": "PLAIN",
-            "sasl.username": settings.get_password("api_key"),
-            "sasl.password": settings.get_password("api_secret"),
-        }
-        
-        return Producer(**conf)
-    
     return KafkaProducer(
         bootstrap_servers=settings.bootstrap_servers,
         client_id=settings.client_id,
@@ -35,62 +24,42 @@ def get_kafka_client(settings, method=None):
         sasl_plain_password=settings.get_password("api_secret"),
     )
 
+def get_kafka_producer(settings_name: str) -> KafkaProducer: 
+    """
+        Return a KafkaProducer instance for the given settings name. If the producer is already
+        created, return the same instance. Otherwise, create a new instance and return it.
 
-def get_kafka_producer(settings, method=None) -> KafkaProducer: 
-    """Return a KafkaProducer instance for the given settings name. If the producer is already
-    created, return the same instance. Otherwise, create a new instance and return it.
+        args:
+            settings_name: Kafka Settings document name
     """
     if frappe.local.site not in bulkwebhook.PRODUCER_MAP:
         bulkwebhook.PRODUCER_MAP[frappe.local.site] = {}
 
-    if settings.name not in bulkwebhook.PRODUCER_MAP[frappe.local.site]:
-        bulkwebhook.PRODUCER_MAP[frappe.local.site][settings.name] = get_kafka_client(
-            settings, method
+    if settings_name not in bulkwebhook.PRODUCER_MAP[frappe.local.site]:
+        bulkwebhook.PRODUCER_MAP[frappe.local.site][settings_name] = get_kafka_client(
+            settings_name
         )
 
-    return bulkwebhook.PRODUCER_MAP[frappe.local.site][settings.name]
+    return bulkwebhook.PRODUCER_MAP[frappe.local.site][settings_name]
 
-def get_schema_registry_client(setting_doc):
-    """Return a SchemaRegistryClient instance for the given settings name.
-    If the client is already created, return the same instance.
-    Otherwise, create a new instance and return it.
-    
-    args:
-        setting_doc: Kafka Settings doctype instance
+def send_kafka(settings_name, topic, key, value):
     """
+        Send the given data to kafka for a given topic.
+        args:
+            settings_name: Kafka Settings document name
+            topic: Kafka topic name
+            key: Kafka message key
+            value: Kafka message value
+    """
+    producer = get_kafka_producer(settings_name)
+    future = (
+        producer.send(topic=topic, key=key, value=value)
+        .add_callback(on_send_success)
+        .add_errback(on_send_error)
+    )
+    res = future.get(timeout=120)
 
-    if f"{setting_doc.name}_schema_registry_client" in bulkwebhook.PRODUCER_MAP[frappe.local.site]:
-        return bulkwebhook.PRODUCER_MAP[frappe.local.site][f"{setting_doc.name}_schema_registry_client"]
-    
-    else:
-        schema_registry_client = SchemaRegistryClient({
-            "url": f"{setting_doc.schema_regestry_url}",
-            "basic.auth.user.info": f"{setting_doc.username}:{setting_doc.get_password('password')}"
-        })
-        if schema_registry_client:
-            bulkwebhook.PRODUCER_MAP[frappe.local.site][f"{setting_doc.name}_schema_registry_client"] = schema_registry_client
-            return bulkwebhook.PRODUCER_MAP[frappe.local.site][f"{setting_doc.name}_schema_registry_client"]
-        else:
-            frappe.log_error(
-                "Schema Registry Client not found, Check the schema registry configuration settings", 
-                title="Schema Registry Client Error"
-            )
-            frappe.throw("Schema Registry Client not found, Please check the schema registry configuration settings")
-
-def send_kafka(settings_name, topic, key, value, proto_obj=None, method=None):
-    setting_doc = frappe.get_cached_doc("Kafka Settings", settings_name)
-    producer = get_kafka_producer(setting_doc, method)
-    if not method:
-        future = (
-            producer.send(topic=topic, key=key, value=value)
-            .add_callback(on_send_success)
-            .add_errback(on_send_error)
-        )
-        res = future.get(timeout=120)
-        return res
-    
-    send_protobuf_data(producer, setting_doc, topic, value, key, proto_obj)
-
+    return res
 
 # NOTE: The on_send_success function is not working.
 def on_send_success(record_metadata):
@@ -104,19 +73,10 @@ def on_send_success(record_metadata):
         )
     )
 
-
 # NOTE: the on_send_error function is not working.
 def on_send_error(excp):
     frappe.log_error(str(excp))
     # handle exception
-
-
-# # produce asynchronously with callbacks
-# producer.send("my-topic", b"raw_bytes").add_callback(on_send_success).add_errback(
-#     on_send_error
-# )
-
-
 
 def serialize_data(data):
     """Serialize data to be sent to Kafka"""
@@ -132,75 +92,3 @@ def serialize_data(data):
             frappe.throw(str(e))
 
     return serialized_data
-
-
-def send_protobuf_data(producer, setting_doc, topic, value, key, proto_obj):
-    """Send serialized protobuf data to kafka
-    
-    params: producer: Confluent_kafka producer object
-            setting_doc: Docement that have configuration properties
-            topic: name of the topic
-            value: Data to be sent to kafka
-            key: the id used for kafka
-            proto_obj: _pb2 object    
-    """
-
-    schema_registry_client = get_schema_registry_client(setting_doc)
-    string_serializer = StringSerializer('utf8')
-
-    serializer_conf = {
-        "auto.register.schemas": True,
-        "normalize.schemas": True,
-        "use.latest.version": False,
-        "use.deprecated.format": False
-    }
-    protobuf_serializer = ProtobufSerializer(
-            proto_obj,
-            schema_registry_client, 
-            serializer_conf
-        )
-    
-    while True:
-        try:
-            producer.poll(0.0)
-            producer.produce(
-                topic=topic,
-                key=string_serializer(str(key)),
-                value=protobuf_serializer(value, SerializationContext(topic, MessageField.VALUE)),
-                on_delivery=callback_response
-            )
-            resp = producer.flush()
-            return resp
-        except Exception as e:
-            raise e
-
-
-def callback_response(err, msg):
-    """collback method to register response from kafka"""
-    
-    if err is not None:
-        frappe.log_error(frappe.get_traceback(), str(err))
-        frappe.throw(str(err))
-    else:
-        resp = {
-            "headers": str(msg.headers()),
-            "key": str(msg.key()),
-            "value": str(msg.value()),
-            "offset": msg.offset(),
-            "partition": str(msg.partition())
-        }
-        request_log = frappe.get_doc(
-            {
-                "doctype": "Webhook Request Log",
-                "user": frappe.session.user if frappe.session.user else None,
-                "url": None,
-                "headers": None,
-                "data": None,
-                "response": json.dumps(resp, indent=4) if resp else None,
-            }
-        )
-
-        request_log.insert(ignore_permissions=True)
-
-
-        
