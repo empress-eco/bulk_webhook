@@ -71,6 +71,10 @@ def run_kafka_hook(
 ):
     hook: KafkaHook = frappe.get_cached_doc("Kafka Hook", kafka_hook_name)
     is_from_request = bool(frappe.request)
+    
+    if hook.process_data == "Method" and hook.webhook_method:
+        run_kafka_hook_for_protobuf(hook, doctype, doc, doc_list)
+        return
 
     if doc:
         _run_kafka_hook(hook, doc)
