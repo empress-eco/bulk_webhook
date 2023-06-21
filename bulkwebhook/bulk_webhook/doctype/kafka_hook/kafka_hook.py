@@ -11,6 +11,7 @@ from frappe.utils.jinja import validate_template
 from bulkwebhook.bulk_webhook.doctype.kafka_settings.kafka_utlis import send_kafka
 from bulkwebhook.bulk_webhook.doctype.bulk_webhook.bulk_webhook import log_request
 
+from bulkwebhook.bulk_webhook.doctype.kafka_settings.confluent_kafka_utils import run_kafka_hook_for_protobuf
 
 def get_safe_frappe_utils():
     from frappe.utils.safe_exec import add_data_utils
@@ -71,7 +72,7 @@ def run_kafka_hook(
 ):
     hook: KafkaHook = frappe.get_cached_doc("Kafka Hook", kafka_hook_name)
     is_from_request = bool(frappe.request)
-
+    
     if doc:
         _run_kafka_hook(hook, doc)
         return
@@ -92,26 +93,19 @@ def run_kafka_hook(
 
 def _run_kafka_hook(hook, doc):
     data = get_webhook_data(doc, hook)
-    key = None
-    is_protobuf_obj = None
-    if hook.process_data == "Method" and hook.webhook_method:
-        key = data.get("data").id
-        is_protobuf_obj = True
     
     r = None
     try:
         r = send_kafka(
             hook.kafka_settings,
             hook.kafka_topic,
-            key,
-            data.get("data"),
-            data.get("proto_obj"),
-            is_protobuf_obj
+            None,
+            data
         )
         log_request(hook.kafka_topic, hook.kafka_settings, data.get("data"), str(r))
 
     except Exception as e:
-        frappe.log_error(str(e), frappe.get_traceback())
+        frappe.log_error(frappe.get_traceback(), str(e))
         log_request(
             "Error: " + hook.kafka_topic,
             hook.kafka_settings,
@@ -131,7 +125,7 @@ def get_webhook_data(doc: Document, kafka_hook: KafkaHook) -> dict:
             kafka_hook.webhook_json, context={**WEBHOOK_CONTEXT, "doc": doc}
         )
         data = json.loads(data)
-        return {"data": data, "proto_obj": None}
+        return data
 
 
 def generate_kafkahook() -> Dict[str, list]:
