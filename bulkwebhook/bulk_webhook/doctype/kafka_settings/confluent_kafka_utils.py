@@ -132,7 +132,7 @@ def run_kafka_hook_for_protobuf(kafka_hook, doctype, doc=None, doc_list=None):
         data_list.append(data.get("data"))
         if not proto_obj:
             proto_obj = data.get("proto_obj")
-        create_kafka_request_log(doctype=kafka_hook.webhook_doctype, docname=doc.name, status="sending to kafka")
+        create_kafka_request_log(doctype=kafka_hook.webhook_doctype, docname=doc.name, status="Sending to Kafka")
 
     elif doc_list:
         for record in doc_list:
@@ -141,7 +141,7 @@ def run_kafka_hook_for_protobuf(kafka_hook, doctype, doc=None, doc_list=None):
             data_list.append(data.get("data"))
             if not proto_obj:
                 proto_obj = data.get("proto_obj")
-        create_kafka_request_log(doctype=kafka_hook.webhook_doctype, status="sending to kafka", doc_list=doc_list)
+        create_kafka_request_log(doctype=kafka_hook.webhook_doctype, docname=doc_list[0], status="Sending to Kafka", doc_list=doc_list)
 
     settings_doc = frappe.get_cached_doc("Kafka Settings", kafka_hook.kafka_settings)
     schema_registry_client = get_schema_registry_client(settings_doc)
@@ -199,7 +199,7 @@ def send_protobuf_data(
     elif count == 1:
         data_sent = data_list[0]
 
-    create_kafka_request_log(doctype=kafka_hook.webhook_doctype, docname=data_list[0].name, status="Sent to kafka",  doc_list=data_list)
+    create_kafka_request_log(doctype=kafka_hook.webhook_doctype, docname=data_list[0].name, status="Sent to Kafka",  doc_list=data_list)
     log_request(kafka_hook.kafka_topic, kafka_hook.kafka_settings, data_sent, "")
 
 

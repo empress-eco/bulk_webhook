@@ -4,6 +4,7 @@
 import frappe
 from frappe.utils import now_datetime
 from frappe.model.document import Document
+from frappe.installer import update_site_config
 
 
 class KafkaRequestLog(Document):
@@ -37,13 +38,38 @@ def create_kafka_request_log(doctype=None, docname=None, status=None, doc_list=N
             }
         ).insert(ignore_permissions=True)
 
+    if frappe.conf.disable_kafka_request_logging:
+        return
+
     if doc_list and len(doc_list) > 1:
         for doc in doc_list:
-            create_log(doctype, docname, status, 1)
+            curr_docname = None
+            if isinstance(doc, str):
+                curr_docname = doc
+            elif isinstance(doc, dict):
+                curr_docname = doc.get("name")
+            elif isinstance(doc, Document):
+                curr_docname = doc.name
+            elif isinstance(doc, object):
+                curr_docname = doc.id or doc.name
+
+            create_log(doctype, curr_docname, status, 1)
 
         no_of_document = len(doc_list)
-        create_log(doctype, docname, status, no_of_document, is_single=False)
+        create_log(doctype, None, status, no_of_document, is_single=False)
     elif doctype and docname:
         create_log(doctype, docname, status, 1)
 
     frappe.db.commit()
+
+
+@frappe.whitelist()
+def is_logging_enabled():
+    frappe.only_for("System Manager")
+    return not frappe.conf.disable_kafka_request_logging
+
+
+@frappe.whitelist()
+def toggle_logging(enable):
+    frappe.only_for("System Manager")
+    update_site_config("disable_kafka_request_logging", not frappe.utils.sbool(enable))
