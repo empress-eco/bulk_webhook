@@ -198,8 +198,9 @@ def send_protobuf_data(
         data_sent = f"Bulk Protobuf Data sent to Kafka: {count}"
     elif count == 1:
         data_sent = data_list[0]
-
-    create_kafka_request_log(doctype=kafka_hook.webhook_doctype, docname=data_list[0].name, status="Sent to Kafka",  doc_list=data_list)
+    
+    docname = data_list[0].id or data_list[0].name
+    create_kafka_request_log(doctype=kafka_hook.webhook_doctype, docname=docname, status="Sent to Kafka",  doc_list=data_list)
     log_request(kafka_hook.kafka_topic, kafka_hook.kafka_settings, data_sent, "")
 
 
